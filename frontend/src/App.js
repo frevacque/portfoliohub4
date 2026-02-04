@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard';
 import Portfolio from './components/Portfolio';
 import History from './components/History';
 import Performance from './components/Performance';
+import Analytics from './components/Analytics';
 import { storage } from './api';
 
 function App() {
