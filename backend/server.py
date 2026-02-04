@@ -149,6 +149,9 @@ async def add_position(position_data: PositionCreate, user_id: str):
     if not ticker_info:
         raise HTTPException(status_code=404, detail=f"Symbol {position_data.symbol} not found")
     
+    # Use provided purchase_date or default to now
+    purchase_date = position_data.purchase_date if position_data.purchase_date else datetime.utcnow()
+    
     # Create position
     position = Position(
         user_id=user_id,
@@ -156,19 +159,21 @@ async def add_position(position_data: PositionCreate, user_id: str):
         name=ticker_info['name'],
         type=position_data.type,
         quantity=position_data.quantity,
-        avg_price=position_data.avg_price
+        avg_price=position_data.avg_price,
+        purchase_date=purchase_date
     )
     
     await db.positions.insert_one(position.dict())
     
-    # Create transaction
+    # Create transaction with same date
     transaction = Transaction(
         user_id=user_id,
         symbol=position_data.symbol.upper(),
         type="buy",
         quantity=position_data.quantity,
         price=position_data.avg_price,
-        total=position_data.quantity * position_data.avg_price
+        total=position_data.quantity * position_data.avg_price,
+        date=purchase_date
     )
     
     await db.transactions.insert_one(transaction.dict())
