@@ -108,8 +108,16 @@ async def get_positions(user_id: str):
         beta = analytics_service.calculate_position_beta(pos['symbol'])
         volatility = analytics_service.calculate_position_volatility(pos['symbol'])
         
+        # Create clean position dict without MongoDB _id
+        clean_pos = {k: v for k, v in pos.items() if k != '_id'}
+        # Convert datetime objects to ISO strings
+        if 'created_at' in clean_pos:
+            clean_pos['created_at'] = clean_pos['created_at'].isoformat()
+        if 'updated_at' in clean_pos:
+            clean_pos['updated_at'] = clean_pos['updated_at'].isoformat()
+        
         enriched_positions.append({
-            **pos,
+            **clean_pos,
             'current_price': round(current_price, 2),
             'total_value': round(total_value, 2),
             'invested': round(invested, 2),
