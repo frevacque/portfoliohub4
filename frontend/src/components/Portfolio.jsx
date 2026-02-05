@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, TrendingUp, TrendingDown, X, Trash2, Calendar } from 'lucide-react';
-import { portfolioAPI, analyticsAPI, storage } from '../api';
+import { Plus, Search, TrendingUp, TrendingDown, X, Trash2, Calendar, Briefcase } from 'lucide-react';
+import { portfolioAPI, analyticsAPI, storage, portfoliosAPI } from '../api';
 
 const Portfolio = () => {
   const [positions, setPositions] = useState([]);
@@ -9,6 +9,8 @@ const Portfolio = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [activePortfolio, setActivePortfolio] = useState(null);
+  const [portfolios, setPortfolios] = useState([]);
   const [formData, setFormData] = useState({
     symbol: '',
     type: 'stock',
