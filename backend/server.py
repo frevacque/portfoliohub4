@@ -624,6 +624,65 @@ async def create_or_update_budget(budget_data: BudgetCreate, user_id: str):
         await db.budgets.insert_one(budget.dict())
         return budget
 
+# CSV Import endpoint
+@api_router.post("/import/csv")
+async def import_csv(user_id: str, positions: List[dict]):
+    """Import positions from CSV data"""
+    imported_count = 0
+    errors = []
+    
+    # Get or create default portfolio
+    default_portfolio = await db.portfolios.find_one({"user_id": user_id, "is_default": True})
+    if not default_portfolio:
+        first_portfolio = await db.portfolios.find_one({"user_id": user_id})
+        if first_portfolio:
+            portfolio_id = first_portfolio['id']
+        else:
+            new_portfolio = Portfolio(
+                user_id=user_id,
+                name="Portefeuille Principal",
+                description="Mon portefeuille par défaut",
+                is_default=True
+            )
+            await db.portfolios.insert_one(new_portfolio.dict())
+            portfolio_id = new_portfolio.id
+    else:
+        portfolio_id = default_portfolio['id']
+    
+    for pos_data in positions:
+        try:
+            symbol = pos_data.get('symbol', '').upper()
+            if not symbol:
+                continue
+            
+            # Try to get ticker info (validate symbol)
+            ticker_info = yf_service.get_ticker_info(symbol)
+            name = ticker_info['name'] if ticker_info else symbol
+            
+            # Create position
+            position = Position(
+                user_id=user_id,
+                portfolio_id=portfolio_id,
+                symbol=symbol,
+                name=name,
+                type=pos_data.get('type', 'stock'),
+                quantity=float(pos_data.get('quantity', 0)),
+                avg_price=float(pos_data.get('avg_price', 0)),
+                purchase_date=datetime.fromisoformat(pos_data.get('purchase_date', datetime.utcnow().isoformat()))
+            )
+            
+            await db.positions.insert_one(position.dict())
+            imported_count += 1
+            
+        except Exception as e:
+            errors.append(f"Erreur pour {pos_data.get('symbol', 'inconnu')}: {str(e)}")
+    
+    return {
+        "imported": imported_count,
+        "errors": errors,
+        "message": f"{imported_count} positions importées avec succès"
+    }
+
 # Portfolio Management endpoints (Multi-portfolio)
 @api_router.get("/portfolios")
 async def get_portfolios(user_id: str):
