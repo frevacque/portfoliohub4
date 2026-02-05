@@ -113,58 +113,48 @@ const Tools = () => {
       const text = await file.text();
       const lines = text.split('\n').filter(line => line.trim());
       
-      // Parse CSV - support different formats
       const positions = [];
-      let headerFound = false;
       let headers = [];
+      let headerFound = false;
       
-      for (const line of lines) {
+      lines.forEach((line, lineIndex) => {
         const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
         
-        // Look for header line
         if (!headerFound) {
           const lowerLine = line.toLowerCase();
-          if (lowerLine.includes('symbol') || lowerLine.includes('symbole') || lowerLine.includes('ticker')) {
+          if (lowerLine.includes('symbol') || lowerLine.includes('symbole')) {
             headers = values.map(h => h.toLowerCase());
             headerFound = true;
-            continue;
+            return;
           }
         }
         
         if (headerFound && values.length >= 2) {
-          const pos = {};
+          const symbolIdx = headers.findIndex(h => h.includes('symbol') || h.includes('symbole'));
+          const qtyIdx = headers.findIndex(h => h.includes('quant'));
+          const priceIdx = headers.findIndex(h => h.includes('prix') || h.includes('price') || h.includes('pru'));
           
-          // Map headers to values
-          headers.forEach((header, index) => {
-            if (index < values.length) {
-              if (header.includes('symbol') || header.includes('symbole') || header.includes('ticker')) {
-                pos.symbol = values[index];
-              } else if (header.includes('quant')) {
-                pos.quantity = values[index];
-              } else if (header.includes('prix') || header.includes('price') || header.includes('pru') || header.includes('avg')) {
-                pos.avg_price = values[index];
-              } else if (header.includes('type')) {
-                pos.type = values[index].toLowerCase().includes('crypto') ? 'crypto' : 'stock';
-              } else if (header.includes('date')) {
-                try {
-                  pos.purchase_date = new Date(values[index]).toISOString();
-                } catch (e) {
-                  pos.purchase_date = new Date().toISOString();
-                }
-              }
+          if (symbolIdx >= 0 && qtyIdx >= 0 && priceIdx >= 0) {
+            const symbol = values[symbolIdx];
+            const quantity = values[qtyIdx];
+            const avgPrice = values[priceIdx];
+            
+            if (symbol && quantity && avgPrice) {
+              positions.push({
+                symbol: symbol,
+                quantity: quantity,
+                avg_price: avgPrice,
+                type: 'stock'
+              });
             }
-          });
-          
-          if (pos.symbol && pos.quantity && pos.avg_price) {
-            positions.push(pos);
           }
         }
-      }
+      });
       
       if (positions.length === 0) {
         setImportResult({
           success: false,
-          message: 'Aucune position valide trouvée dans le fichier. Assurez-vous que le CSV contient les colonnes: Symbole, Quantité, Prix'
+          message: 'Aucune position valide trouvée. Colonnes requises: Symbole, Quantité, Prix'
         });
         return;
       }
