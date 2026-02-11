@@ -52,13 +52,13 @@ class PortfolioAnalytics:
             logger.error(f"Error calculating portfolio volatility: {str(e)}")
             return {'daily': 0.0, 'monthly': 0.0, 'historical': 0.0}
     
-    def calculate_portfolio_beta(self, positions: List[Dict], period: str = '1y') -> float:
+    def calculate_portfolio_beta(self, positions: List[Dict], period: str = '1y', market_index: str = '^GSPC') -> float:
         """Calculate portfolio beta"""
         try:
             # Get market data
-            market_data = self.yf_service.get_market_data('^GSPC', period)
+            market_data = self.yf_service.get_market_data(market_index, period)
             if market_data is None or market_data.empty:
-                logger.warning("No market data available for beta calculation")
+                logger.warning(f"No market data available for beta calculation (index: {market_index})")
                 return 1.0
             
             # Make timezone naive
@@ -97,7 +97,7 @@ class PortfolioAnalytics:
                 portfolio_returns += weight * aligned_returns
             
             beta = self.yf_service.calculate_beta(portfolio_returns, market_returns)
-            logger.info(f"Calculated portfolio beta: {beta}")
+            logger.info(f"Calculated portfolio beta: {beta} (vs {market_index})")
             return round(beta, 2)
         except Exception as e:
             logger.error(f"Error calculating portfolio beta: {str(e)}")
