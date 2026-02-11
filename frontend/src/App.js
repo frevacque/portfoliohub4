@@ -6,6 +6,7 @@ import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import Portfolio from './components/Portfolio';
 import Portfolios from './components/Portfolios';
+import Cash from './components/Cash';
 import History from './components/History';
 import Performance from './components/Performance';
 import Analytics from './components/Analytics';
