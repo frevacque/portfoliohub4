@@ -638,11 +638,101 @@ async def delete_dividend(dividend_id: str, user_id: str):
 # Alerts endpoints
 @api_router.get("/alerts")
 async def get_alerts(user_id: str):
-    alerts = await db.alerts.find({"user_id": user_id}).to_list(1000)
-    return alerts
+    alerts = await db.alerts.find({"user_id": user_id}).sort("created_at", -1).to_list(1000)
+    
+    # Clean MongoDB _id and convert dates
+    clean_alerts = []
+    for alert in alerts:
+        clean_alert = {k: v for k, v in alert.items() if k != '_id'}
+        if 'created_at' in clean_alert and hasattr(clean_alert['created_at'], 'isoformat'):
+            clean_alert['created_at'] = clean_alert['created_at'].isoformat()
+        if 'triggered_at' in clean_alert and clean_alert['triggered_at'] and hasattr(clean_alert['triggered_at'], 'isoformat'):
+            clean_alert['triggered_at'] = clean_alert['triggered_at'].isoformat()
+        clean_alerts.append(clean_alert)
+    
+    return clean_alerts
+
+@api_router.get("/alerts/triggered")
+async def get_triggered_alerts(user_id: str):
+    """Get alerts that have been triggered but not yet acknowledged"""
+    alerts = await db.alerts.find({
+        "user_id": user_id,
+        "is_triggered": True,
+        "is_acknowledged": False
+    }).to_list(1000)
+    
+    clean_alerts = []
+    for alert in alerts:
+        clean_alert = {k: v for k, v in alert.items() if k != '_id'}
+        if 'created_at' in clean_alert and hasattr(clean_alert['created_at'], 'isoformat'):
+            clean_alert['created_at'] = clean_alert['created_at'].isoformat()
+        if 'triggered_at' in clean_alert and clean_alert['triggered_at'] and hasattr(clean_alert['triggered_at'], 'isoformat'):
+            clean_alert['triggered_at'] = clean_alert['triggered_at'].isoformat()
+        clean_alerts.append(clean_alert)
+    
+    return clean_alerts
+
+@api_router.get("/alerts/check")
+async def check_alerts(user_id: str):
+    """Check all active alerts and trigger them if conditions are met"""
+    alerts = await db.alerts.find({
+        "user_id": user_id,
+        "is_active": True,
+        "is_triggered": False
+    }).to_list(1000)
+    
+    triggered_alerts = []
+    
+    for alert in alerts:
+        symbol = alert['symbol']
+        current_price = yf_service.get_current_price(symbol)
+        
+        if current_price is None:
+            continue
+        
+        should_trigger = False
+        
+        if alert['alert_type'] == 'price_above' and current_price >= alert['target_value']:
+            should_trigger = True
+        elif alert['alert_type'] == 'price_below' and current_price <= alert['target_value']:
+            should_trigger = True
+        
+        if should_trigger:
+            # Update alert as triggered
+            await db.alerts.update_one(
+                {"id": alert['id']},
+                {
+                    "$set": {
+                        "is_triggered": True,
+                        "triggered_at": datetime.utcnow(),
+                        "triggered_price": current_price
+                    }
+                }
+            )
+            triggered_alerts.append({
+                "id": alert['id'],
+                "symbol": symbol,
+                "alert_type": alert['alert_type'],
+                "target_value": alert['target_value'],
+                "current_price": current_price,
+                "notes": alert.get('notes')
+            })
+    
+    return {
+        "checked": len(alerts),
+        "triggered": len(triggered_alerts),
+        "alerts": triggered_alerts
+    }
 
 @api_router.post("/alerts")
 async def create_alert(alert_data: AlertCreate, user_id: str):
+    # Validate symbol
+    ticker_info = yf_service.get_ticker_info(alert_data.symbol)
+    if not ticker_info:
+        raise HTTPException(status_code=404, detail=f"Symbole {alert_data.symbol} non trouvé")
+    
+    current_price = yf_service.get_current_price(alert_data.symbol)
+    
     alert = Alert(
         user_id=user_id,
         symbol=alert_data.symbol.upper(),
@@ -652,7 +742,41 @@ async def create_alert(alert_data: AlertCreate, user_id: str):
     )
     
     await db.alerts.insert_one(alert.dict())
-    return alert
+    
+    return {
+        **alert.dict(),
+        "current_price": current_price,
+        "symbol_name": ticker_info['name']
+    }
+
+@api_router.put("/alerts/{alert_id}/acknowledge")
+async def acknowledge_alert(alert_id: str, user_id: str):
+    """Mark an alert as acknowledged (dismiss the notification)"""
+    result = await db.alerts.update_one(
+        {"id": alert_id, "user_id": user_id},
+        {"$set": {"is_acknowledged": True}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Alerte non trouvée")
+    return {"message": "Alerte acquittée"}
+
+@api_router.put("/alerts/{alert_id}/reactivate")
+async def reactivate_alert(alert_id: str, user_id: str):
+    """Reactivate an alert (reset triggered state)"""
+    result = await db.alerts.update_one(
+        {"id": alert_id, "user_id": user_id},
+        {
+            "$set": {
+                "is_triggered": False,
+                "is_acknowledged": False,
+                "triggered_at": None,
+                "triggered_price": None
+            }
+        }
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Alerte non trouvée")
+    return {"message": "Alerte réactivée"}
 
 @api_router.put("/alerts/{alert_id}")
 async def update_alert(alert_id: str, user_id: str, is_active: bool):
@@ -661,15 +785,15 @@ async def update_alert(alert_id: str, user_id: str, is_active: bool):
         {"$set": {"is_active": is_active}}
     )
     if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Alert not found")
-    return {"message": "Alert updated successfully"}
+        raise HTTPException(status_code=404, detail="Alerte non trouvée")
+    return {"message": "Alerte mise à jour"}
 
 @api_router.delete("/alerts/{alert_id}")
 async def delete_alert(alert_id: str, user_id: str):
     result = await db.alerts.delete_one({"id": alert_id, "user_id": user_id})
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Alert not found")
-    return {"message": "Alert deleted successfully"}
+        raise HTTPException(status_code=404, detail="Alerte non trouvée")
+    return {"message": "Alerte supprimée"}
 
 # Goals endpoints
 @api_router.get("/goals")
