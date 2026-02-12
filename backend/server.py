@@ -280,6 +280,8 @@ async def add_position(position_data: PositionCreate, user_id: str):
             }
     else:
         # BUY TRANSACTION
+        buy_total = quantity * price
+        
         if existing_position:
             # Merge with existing position
             old_quantity = existing_position['quantity']
@@ -299,17 +301,19 @@ async def add_position(position_data: PositionCreate, user_id: str):
                 }
             )
             
-            # Create buy transaction
+            # Create buy transaction with portfolio_id
             transaction = Transaction(
                 user_id=user_id,
                 symbol=symbol_upper,
                 type="buy",
                 quantity=quantity,
                 price=price,
-                total=quantity * price,
+                total=buy_total,
                 date=transaction_date
             )
-            await db.transactions.insert_one(transaction.dict())
+            transaction_dict = transaction.dict()
+            transaction_dict['portfolio_id'] = portfolio_id
+            await db.transactions.insert_one(transaction_dict)
             
             return {
                 "id": existing_position['id'],
@@ -333,17 +337,19 @@ async def add_position(position_data: PositionCreate, user_id: str):
             
             await db.positions.insert_one(position.dict())
             
-            # Create buy transaction
+            # Create buy transaction with portfolio_id
             transaction = Transaction(
                 user_id=user_id,
                 symbol=symbol_upper,
                 type="buy",
                 quantity=quantity,
                 price=price,
-                total=quantity * price,
+                total=buy_total,
                 date=transaction_date
             )
-            await db.transactions.insert_one(transaction.dict())
+            transaction_dict = transaction.dict()
+            transaction_dict['portfolio_id'] = portfolio_id
+            await db.transactions.insert_one(transaction_dict)
             
             return {
                 "id": position.id,
