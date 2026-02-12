@@ -29,10 +29,11 @@ class UserResponse(BaseModel):
 class PositionCreate(BaseModel):
     symbol: str
     type: str  # "stock" or "crypto"
+    transaction_type: str = "buy"  # "buy" or "sell"
     quantity: float
     avg_price: float
-    purchase_date: Optional[datetime] = None  # Date d'achat personnalisée
-    portfolio_id: Optional[str] = None  # ID du portefeuille (multi-portfolio)
+    purchase_date: Optional[datetime] = None
+    portfolio_id: Optional[str] = None
 
 class Position(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
