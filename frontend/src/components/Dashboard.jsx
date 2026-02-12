@@ -38,7 +38,11 @@ const Dashboard = () => {
       ]);
       
       setPortfolio(portfolioData);
-      setPositions(positionsData.slice(0, 5));
+      
+      // Sort positions by weight (descending) and take top 5
+      const sortedPositions = [...positionsData].sort((a, b) => (b.weight || 0) - (a.weight || 0));
+      setPositions(sortedPositions.slice(0, 5));
+      
       setRecommendations(recommendationsData);
       setRiskFreeRate(settingsData.data.risk_free_rate || 3.0);
       setTempRFR(settingsData.data.risk_free_rate || 3.0);
