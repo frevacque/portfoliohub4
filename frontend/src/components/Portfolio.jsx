@@ -630,7 +630,9 @@ const Portfolio = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>Prix d'achat moyen (PRU)</label>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>
+                  {formData.transaction_type === 'buy' ? "Prix d'achat unitaire" : "Prix de vente unitaire"}
+                </label>
                 <input
                   type="number"
                   step="any"
@@ -644,7 +646,7 @@ const Portfolio = () => {
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Calendar size={16} />
-                  Date d'achat
+                  {formData.transaction_type === 'buy' ? "Date d'achat" : "Date de vente"}
                 </label>
                 <input
                   type="date"
@@ -656,15 +658,20 @@ const Portfolio = () => {
               </div>
 
               <button 
-                className="btn-primary" 
+                className={formData.transaction_type === 'buy' ? 'btn-primary' : 'btn-secondary'}
                 onClick={handleAddPosition} 
-                style={{ width: '100%', marginTop: '8px' }}
+                style={{ 
+                  width: '100%', 
+                  marginTop: '8px',
+                  background: formData.transaction_type === 'sell' ? 'var(--danger)' : undefined,
+                  borderColor: formData.transaction_type === 'sell' ? 'var(--danger)' : undefined
+                }}
                 disabled={submitting}
               >
-                {submitting ? 'Ajout en cours...' : (
+                {submitting ? 'En cours...' : (
                   <>
-                    <Plus size={20} />
-                    Ajouter la position
+                    {formData.transaction_type === 'buy' ? <Plus size={20} /> : <TrendingDown size={20} />}
+                    {formData.transaction_type === 'buy' ? 'Acheter' : 'Vendre'}
                   </>
                 )}
               </button>
