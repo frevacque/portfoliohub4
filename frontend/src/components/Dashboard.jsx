@@ -447,8 +447,8 @@ const Dashboard = () => {
                     <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>
                       {position.symbol}
                     </span>
-                    <span className="badge badge-info" style={{ fontSize: '12px', padding: '4px 8px' }}>
-                      {position.type === 'stock' ? 'Action' : 'Crypto'}
+                    <span className={`badge ${position.type === 'etf' ? 'badge-warning' : 'badge-info'}`} style={{ fontSize: '12px', padding: '4px 8px' }}>
+                      {position.type === 'stock' ? 'Action' : position.type === 'etf' ? 'ETF' : 'Crypto'}
                     </span>
                   </div>
                   <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{position.name}</div>
