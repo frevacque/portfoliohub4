@@ -457,10 +457,10 @@ async def get_recommendations(user_id: str):
     # Get portfolio summary
     summary_data = await get_portfolio_summary(user_id)
     
-    # Generate recommendations
+    # Generate recommendations (summary_data is already a dict)
     recommendations = analytics_service.generate_recommendations(
         positions_data,
-        summary_data.dict()
+        summary_data
     )
     
     return recommendations
