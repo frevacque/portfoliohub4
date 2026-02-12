@@ -238,10 +238,28 @@ const Portfolio = () => {
             {activePortfolio ? activePortfolio.name : 'Chargement...'}
           </p>
         </div>
-        <button className="btn-primary" onClick={() => setShowAddModal(true)} data-testid="add-position-btn">
-          <Plus size={20} />
-          Ajouter une position
-        </button>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          {hasDuplicates() && (
+            <button 
+              className="btn-secondary" 
+              onClick={handleMergeDuplicates} 
+              disabled={merging}
+              style={{ 
+                background: 'var(--warning-bg)', 
+                borderColor: 'var(--warning)',
+                color: 'var(--warning)'
+              }}
+              data-testid="merge-duplicates-btn"
+            >
+              <Merge size={20} />
+              {merging ? 'Fusion...' : 'Fusionner les doublons'}
+            </button>
+          )}
+          <button className="btn-primary" onClick={() => setShowAddModal(true)} data-testid="add-position-btn">
+            <Plus size={20} />
+            Ajouter une position
+          </button>
+        </div>
       </div>
 
       {/* Search Bar */}
