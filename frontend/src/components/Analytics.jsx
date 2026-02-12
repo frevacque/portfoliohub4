@@ -88,9 +88,7 @@ const Analytics = () => {
           {[
             { value: 'sectors', label: 'Secteurs', icon: PieIcon },
             { value: 'risk', label: 'Risque/Rendement', icon: Target },
-            { value: 'dividends', label: 'Dividendes', icon: DollarSign },
-            { value: 'alerts', label: 'Alertes', icon: Bell },
-            { value: 'goals', label: 'Objectifs', icon: TrendingUp }
+            { value: 'dividends', label: 'Dividendes', icon: DollarSign }
           ].map(tab => (
             <button
               key={tab.value}
