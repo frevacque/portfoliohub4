@@ -159,23 +159,20 @@ async def add_position(position_data: PositionCreate, user_id: str):
     # Get ticker info to validate and get name
     ticker_info = yf_service.get_ticker_info(position_data.symbol)
     if not ticker_info:
-        raise HTTPException(status_code=404, detail=f"Symbol {position_data.symbol} not found")
+        raise HTTPException(status_code=404, detail=f"Symbole {position_data.symbol} non trouvé")
     
     # Use provided purchase_date or default to now
-    purchase_date = position_data.purchase_date if position_data.purchase_date else datetime.utcnow()
+    transaction_date = position_data.purchase_date if position_data.purchase_date else datetime.utcnow()
     
     # Get portfolio_id - use provided one or get the default portfolio
     portfolio_id = position_data.portfolio_id
     if not portfolio_id:
-        # Find or create default portfolio
         default_portfolio = await db.portfolios.find_one({"user_id": user_id, "is_default": True})
         if not default_portfolio:
-            # Get first portfolio or create one
             first_portfolio = await db.portfolios.find_one({"user_id": user_id})
             if first_portfolio:
                 portfolio_id = first_portfolio['id']
             else:
-                # Create default portfolio
                 new_portfolio = Portfolio(
                     user_id=user_id,
                     name="Portefeuille Principal",
@@ -188,8 +185,9 @@ async def add_position(position_data: PositionCreate, user_id: str):
             portfolio_id = default_portfolio['id']
     
     symbol_upper = position_data.symbol.upper()
-    new_quantity = position_data.quantity
-    new_price = position_data.avg_price
+    quantity = position_data.quantity
+    price = position_data.avg_price
+    transaction_type = position_data.transaction_type or "buy"
     
     # Check if position already exists for this symbol in this portfolio
     existing_position = await db.positions.find_one({
@@ -198,82 +196,132 @@ async def add_position(position_data: PositionCreate, user_id: str):
         "symbol": symbol_upper
     })
     
-    if existing_position:
-        # Merge positions: calculate weighted average price (PRU moyen)
+    if transaction_type == "sell":
+        # SELL TRANSACTION
+        if not existing_position:
+            raise HTTPException(status_code=400, detail=f"Vous ne détenez pas de position sur {symbol_upper}")
+        
         old_quantity = existing_position['quantity']
-        old_price = existing_position['avg_price']
         
-        # New total quantity
-        total_quantity = old_quantity + new_quantity
+        if quantity > old_quantity:
+            raise HTTPException(status_code=400, detail=f"Quantité insuffisante. Vous détenez {old_quantity} unités de {symbol_upper}")
         
-        # Weighted average price: (old_qty * old_price + new_qty * new_price) / total_qty
-        weighted_avg_price = ((old_quantity * old_price) + (new_quantity * new_price)) / total_quantity
+        new_quantity = old_quantity - quantity
         
-        # Update existing position
-        await db.positions.update_one(
-            {"id": existing_position['id']},
-            {
-                "$set": {
-                    "quantity": total_quantity,
-                    "avg_price": round(weighted_avg_price, 4),
-                    "updated_at": datetime.utcnow()
-                }
+        # Create sell transaction
+        transaction = Transaction(
+            user_id=user_id,
+            symbol=symbol_upper,
+            type="sell",
+            quantity=quantity,
+            price=price,
+            total=quantity * price,
+            date=transaction_date
+        )
+        await db.transactions.insert_one(transaction.dict())
+        
+        if new_quantity <= 0:
+            # Position completely sold - delete it
+            await db.positions.delete_one({"id": existing_position['id']})
+            return {
+                "id": existing_position['id'],
+                "symbol": symbol_upper,
+                "quantity": 0,
+                "message": f"Position {symbol_upper} entièrement vendue ({quantity} unités à {price}€)"
             }
-        )
-        
-        # Create transaction record for the new purchase
-        transaction = Transaction(
-            user_id=user_id,
-            symbol=symbol_upper,
-            type="buy",
-            quantity=new_quantity,
-            price=new_price,
-            total=new_quantity * new_price,
-            date=purchase_date
-        )
-        await db.transactions.insert_one(transaction.dict())
-        
-        # Return updated position info
-        return {
-            "id": existing_position['id'],
-            "user_id": user_id,
-            "portfolio_id": portfolio_id,
-            "symbol": symbol_upper,
-            "name": existing_position['name'],
-            "type": existing_position['type'],
-            "quantity": total_quantity,
-            "avg_price": round(weighted_avg_price, 4),
-            "message": f"Position fusionnée: {old_quantity} + {new_quantity} = {total_quantity} unités au PRU de {round(weighted_avg_price, 2)}€"
-        }
+        else:
+            # Partial sell - update quantity (PRU stays the same)
+            await db.positions.update_one(
+                {"id": existing_position['id']},
+                {
+                    "$set": {
+                        "quantity": new_quantity,
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+            return {
+                "id": existing_position['id'],
+                "symbol": symbol_upper,
+                "quantity": new_quantity,
+                "avg_price": existing_position['avg_price'],
+                "message": f"Vente partielle: {quantity} unités vendues à {price}€. Reste {new_quantity} unités"
+            }
     else:
-        # Create new position
-        position = Position(
-            user_id=user_id,
-            portfolio_id=portfolio_id,
-            symbol=symbol_upper,
-            name=ticker_info['name'],
-            type=position_data.type,
-            quantity=new_quantity,
-            avg_price=new_price,
-            purchase_date=purchase_date
-        )
-        
-        await db.positions.insert_one(position.dict())
-        
-        # Create transaction with same date
-        transaction = Transaction(
-            user_id=user_id,
-            symbol=symbol_upper,
-            type="buy",
-            quantity=new_quantity,
-            price=new_price,
-            total=new_quantity * new_price,
-            date=purchase_date
-        )
-        
-        await db.transactions.insert_one(transaction.dict())
-        
-        return position
+        # BUY TRANSACTION
+        if existing_position:
+            # Merge with existing position
+            old_quantity = existing_position['quantity']
+            old_price = existing_position['avg_price']
+            
+            total_quantity = old_quantity + quantity
+            weighted_avg_price = ((old_quantity * old_price) + (quantity * price)) / total_quantity
+            
+            await db.positions.update_one(
+                {"id": existing_position['id']},
+                {
+                    "$set": {
+                        "quantity": total_quantity,
+                        "avg_price": round(weighted_avg_price, 4),
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+            
+            # Create buy transaction
+            transaction = Transaction(
+                user_id=user_id,
+                symbol=symbol_upper,
+                type="buy",
+                quantity=quantity,
+                price=price,
+                total=quantity * price,
+                date=transaction_date
+            )
+            await db.transactions.insert_one(transaction.dict())
+            
+            return {
+                "id": existing_position['id'],
+                "symbol": symbol_upper,
+                "quantity": total_quantity,
+                "avg_price": round(weighted_avg_price, 4),
+                "message": f"Achat fusionné: {old_quantity} + {quantity} = {total_quantity} unités au PRU de {round(weighted_avg_price, 2)}€"
+            }
+        else:
+            # Create new position
+            position = Position(
+                user_id=user_id,
+                portfolio_id=portfolio_id,
+                symbol=symbol_upper,
+                name=ticker_info['name'],
+                type=position_data.type,
+                quantity=quantity,
+                avg_price=price,
+                purchase_date=transaction_date
+            )
+            
+            await db.positions.insert_one(position.dict())
+            
+            # Create buy transaction
+            transaction = Transaction(
+                user_id=user_id,
+                symbol=symbol_upper,
+                type="buy",
+                quantity=quantity,
+                price=price,
+                total=quantity * price,
+                date=transaction_date
+            )
+            await db.transactions.insert_one(transaction.dict())
+            
+            return {
+                "id": position.id,
+                "symbol": symbol_upper,
+                "quantity": quantity,
+                "avg_price": price,
+                "name": ticker_info['name'],
+                "message": f"Nouvelle position créée: {quantity} unités de {symbol_upper} à {price}€"
+            }
 
 @api_router.delete("/positions/{position_id}")
 async def delete_position(position_id: str, user_id: str):
