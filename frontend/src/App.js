@@ -12,7 +12,6 @@ import Performance from './components/Performance';
 import Analytics from './components/Analytics';
 import Tools from './components/Tools';
 import Alerts from './components/Alerts';
-import Goals from './components/Goals';
 import { storage } from './api';
 
 function App() {
