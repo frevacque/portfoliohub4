@@ -61,13 +61,18 @@ const Analytics = () => {
     );
   }
 
-  // Prepare risk/return scatter data
-  const riskReturnData = positions.map(pos => ({
-    symbol: pos.symbol,
-    volatility: pos.volatility,
-    return: pos.gain_loss_percent,
-    value: pos.total_value
-  }));
+  // Prepare risk/return scatter data - filter out positions with invalid data
+  const riskReturnData = positions
+    .filter(pos => pos.volatility !== undefined && pos.volatility !== null && pos.volatility > 0)
+    .map(pos => ({
+      symbol: pos.symbol,
+      volatility: pos.volatility || 0,
+      return: pos.gain_loss_percent || 0,
+      value: pos.total_value || 0
+    }));
+
+  // Calculate total portfolio value for percentage calculations
+  const totalPortfolioValue = positions.reduce((sum, pos) => sum + (pos.total_value || 0), 0);
 
   return (
     <div className="container" style={{ padding: '32px 24px' }}>
