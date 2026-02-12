@@ -913,6 +913,48 @@ async def delete_portfolio(portfolio_id: str, user_id: str):
     
     return {"message": "Portefeuille supprimé avec succès"}
 
+# User Settings endpoints
+@api_router.get("/settings")
+async def get_user_settings(user_id: str):
+    """Get user settings including risk-free rate"""
+    settings = await db.user_settings.find_one({"user_id": user_id})
+    if not settings:
+        # Create default settings
+        default_settings = UserSettings(user_id=user_id)
+        await db.user_settings.insert_one(default_settings.dict())
+        return {
+            "risk_free_rate": default_settings.risk_free_rate,
+            "updated_at": default_settings.updated_at.isoformat()
+        }
+    
+    return {
+        "risk_free_rate": settings['risk_free_rate'],
+        "updated_at": settings['updated_at'].isoformat() if hasattr(settings['updated_at'], 'isoformat') else settings['updated_at']
+    }
+
+@api_router.put("/settings")
+async def update_user_settings(settings_data: UserSettingsUpdate, user_id: str):
+    """Update user settings"""
+    existing = await db.user_settings.find_one({"user_id": user_id})
+    
+    update_data = {"updated_at": datetime.utcnow()}
+    if settings_data.risk_free_rate is not None:
+        update_data["risk_free_rate"] = settings_data.risk_free_rate
+    
+    if existing:
+        await db.user_settings.update_one(
+            {"user_id": user_id},
+            {"$set": update_data}
+        )
+    else:
+        new_settings = UserSettings(
+            user_id=user_id,
+            risk_free_rate=settings_data.risk_free_rate or 3.0
+        )
+        await db.user_settings.insert_one(new_settings.dict())
+    
+    return {"message": "Paramètres mis à jour", "risk_free_rate": settings_data.risk_free_rate}
+
 # Cash Management endpoints
 @api_router.get("/cash/balance")
 async def get_cash_balance(user_id: str):
