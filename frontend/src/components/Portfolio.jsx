@@ -349,8 +349,8 @@ const Portfolio = () => {
                   <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)' }}>
                     {position.symbol}
                   </div>
-                  <span className="badge badge-info">
-                    {position.type === 'stock' ? 'Action' : 'Crypto'}
+                  <span className={`badge ${position.type === 'etf' ? 'badge-warning' : 'badge-info'}`}>
+                    {position.type === 'stock' ? 'Action' : position.type === 'etf' ? 'ETF' : 'Crypto'}
                   </span>
                 </div>
                 <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{position.name}</div>
@@ -600,6 +600,7 @@ const Portfolio = () => {
                   className="input-field"
                 >
                   <option value="stock">Action</option>
+                  <option value="etf">ETF</option>
                   <option value="crypto">Cryptomonnaie</option>
                 </select>
               </div>
@@ -607,6 +608,7 @@ const Portfolio = () => {
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>
                   Symbole {formData.type === 'crypto' && <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>(ex: BTC-USD, ETH-USD)</span>}
+                  {formData.type === 'etf' && <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>(ex: SPY, QQQ, VTI, IWDA.AS)</span>}
                 </label>
                 <input
                   type="text"
