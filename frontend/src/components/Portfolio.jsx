@@ -84,9 +84,10 @@ const Portfolio = () => {
     setError('');
 
     try {
-      await portfolioAPI.addPosition(userId, {
+      const response = await axios.post(`${API}/positions?user_id=${userId}`, {
         symbol: formData.symbol.toUpperCase(),
         type: formData.type,
+        transaction_type: formData.transaction_type,
         quantity: parseFloat(formData.quantity),
         avg_price: parseFloat(formData.avg_price),
         purchase_date: new Date(formData.purchase_date).toISOString(),
@@ -96,16 +97,23 @@ const Portfolio = () => {
       // Refresh data
       await fetchData();
 
+      // Show success message if it's a merge or sell
+      if (response.data.message) {
+        setSuccessMessage(response.data.message);
+        setTimeout(() => setSuccessMessage(''), 5000);
+      }
+
       setShowAddModal(false);
       setFormData({ 
         symbol: '', 
         type: 'stock', 
+        transaction_type: 'buy',
         quantity: '', 
         avg_price: '',
         purchase_date: new Date().toISOString().split('T')[0]
       });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erreur lors de l\'ajout de la position');
+      setError(err.response?.data?.detail || 'Erreur lors de l\'opération');
     } finally {
       setSubmitting(false);
     }
