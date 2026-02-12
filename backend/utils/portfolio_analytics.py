@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Tuple
+from datetime import datetime, timedelta
 from .yahoo_finance import YahooFinanceService
 import logging
 
@@ -13,7 +14,7 @@ class PortfolioAnalytics:
         self.yf_service = YahooFinanceService()
     
     def calculate_portfolio_volatility(self, positions: List[Dict], period: str = '1y') -> Dict[str, float]:
-        """Calculate portfolio volatility (daily, monthly, historical)"""
+        """Calculate portfolio volatility (historical annualized)"""
         try:
             # Get historical data for all positions
             weights = []
@@ -30,7 +31,7 @@ class PortfolioAnalytics:
                     returns_data.append(returns)
             
             if not returns_data:
-                return {'daily': 0.0, 'monthly': 0.0, 'historical': 0.0}
+                return {'historical': 0.0, 'realized': 0.0}
             
             # Combine returns weighted by position size
             portfolio_returns = pd.Series(0, index=returns_data[0].index)
@@ -38,19 +39,104 @@ class PortfolioAnalytics:
                 aligned_returns = returns.reindex(portfolio_returns.index, fill_value=0)
                 portfolio_returns += weight * aligned_returns
             
-            # Calculate volatilities
-            daily_vol = float(portfolio_returns.std() * 100)  # Daily volatility
-            monthly_vol = float(portfolio_returns.resample('ME').sum().std() * 100)  # Monthly volatility (ME = Month End)
+            # Calculate historical volatility (annualized)
             historical_vol = self.yf_service.calculate_volatility(portfolio_returns, annualize=True)
             
             return {
-                'daily': round(daily_vol, 2),
-                'monthly': round(monthly_vol, 2),
-                'historical': round(historical_vol, 2)
+                'historical': round(historical_vol, 2),
+                'realized': 0.0  # Will be calculated separately with actual holding period
             }
         except Exception as e:
             logger.error(f"Error calculating portfolio volatility: {str(e)}")
-            return {'daily': 0.0, 'monthly': 0.0, 'historical': 0.0}
+            return {'historical': 0.0, 'realized': 0.0}
+    
+    def calculate_realized_volatility(self, positions: List[Dict]) -> float:
+        """Calculate the realized volatility since the user started holding each position"""
+        try:
+            if not positions:
+                return 0.0
+            
+            weights = []
+            returns_data = []
+            total_value = sum(p.get('total_value', 0) for p in positions)
+            
+            if total_value == 0:
+                return 0.0
+            
+            for position in positions:
+                # Get purchase date from position
+                purchase_date = position.get('purchase_date')
+                if purchase_date:
+                    if isinstance(purchase_date, str):
+                        purchase_date = datetime.fromisoformat(purchase_date.replace('Z', '+00:00'))
+                    
+                    # Calculate days since purchase
+                    days_held = (datetime.utcnow() - purchase_date.replace(tzinfo=None)).days
+                    if days_held < 2:
+                        continue  # Need at least 2 days of data
+                    
+                    # Get historical data since purchase date
+                    period = f'{days_held}d'
+                    hist_data = self.yf_service.get_historical_data(position['symbol'], period)
+                    
+                    if hist_data is not None and len(hist_data) >= 2:
+                        returns = self.yf_service.calculate_returns(hist_data['Close'])
+                        weight = position.get('total_value', 0) / total_value
+                        weights.append(weight)
+                        returns_data.append(returns)
+            
+            if not returns_data:
+                return 0.0
+            
+            # Find common date range
+            min_length = min(len(r) for r in returns_data)
+            if min_length < 2:
+                return 0.0
+            
+            # Combine weighted returns
+            combined_returns = pd.Series(0.0, index=range(min_length))
+            for weight, returns in zip(weights, returns_data):
+                # Take last min_length returns
+                recent_returns = returns.tail(min_length).reset_index(drop=True)
+                combined_returns += weight * recent_returns
+            
+            # Calculate annualized volatility
+            realized_vol = float(combined_returns.std() * np.sqrt(252) * 100)
+            
+            return round(realized_vol, 2)
+        except Exception as e:
+            logger.error(f"Error calculating realized volatility: {str(e)}")
+            return 0.0
+    
+    def calculate_sharpe_ratio_custom(self, positions: List[Dict], risk_free_rate: float = 3.0) -> float:
+        """Calculate Sharpe ratio with custom risk-free rate"""
+        try:
+            if not positions:
+                return 0.0
+            
+            # Calculate portfolio return
+            total_value = sum(p.get('total_value', 0) for p in positions)
+            total_invested = sum(p.get('invested', 0) for p in positions)
+            
+            if total_invested == 0:
+                return 0.0
+            
+            portfolio_return = ((total_value - total_invested) / total_invested) * 100
+            
+            # Get portfolio volatility
+            volatility = self.calculate_portfolio_volatility(positions)
+            historical_vol = volatility.get('historical', 0)
+            
+            if historical_vol == 0:
+                return 0.0
+            
+            # Sharpe = (Return - Risk Free Rate) / Volatility
+            sharpe = (portfolio_return - risk_free_rate) / historical_vol
+            
+            return round(sharpe, 2)
+        except Exception as e:
+            logger.error(f"Error calculating Sharpe ratio: {str(e)}")
+            return 0.0
     
     def calculate_portfolio_beta(self, positions: List[Dict], period: str = '1y', market_index: str = '^GSPC') -> float:
         """Calculate portfolio beta"""
