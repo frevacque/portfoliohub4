@@ -524,7 +524,7 @@ const Portfolio = () => {
               <X size={24} />
             </button>
 
-            <h2 className="h2" style={{ marginBottom: '24px' }}>Ajouter une position</h2>
+            <h2 className="h2" style={{ marginBottom: '24px' }}>Nouvelle Transaction</h2>
 
             {error && (
               <div style={{
@@ -541,8 +541,59 @@ const Portfolio = () => {
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Transaction Type - Buy/Sell */}
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>Type</label>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>
+                  Type de transaction
+                </label>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, transaction_type: 'buy' })}
+                    style={{
+                      flex: 1,
+                      padding: '16px',
+                      border: `2px solid ${formData.transaction_type === 'buy' ? 'var(--success)' : 'var(--border-primary)'}`,
+                      borderRadius: '12px',
+                      background: formData.transaction_type === 'buy' ? 'var(--success-bg)' : 'transparent',
+                      color: formData.transaction_type === 'buy' ? 'var(--success)' : 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontWeight: '600'
+                    }}
+                  >
+                    <TrendingUp size={24} />
+                    ACHAT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, transaction_type: 'sell' })}
+                    style={{
+                      flex: 1,
+                      padding: '16px',
+                      border: `2px solid ${formData.transaction_type === 'sell' ? 'var(--danger)' : 'var(--border-primary)'}`,
+                      borderRadius: '12px',
+                      background: formData.transaction_type === 'sell' ? 'var(--danger-bg)' : 'transparent',
+                      color: formData.transaction_type === 'sell' ? 'var(--danger)' : 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontWeight: '600'
+                    }}
+                  >
+                    <TrendingDown size={24} />
+                    VENTE
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>Type d'actif</label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
