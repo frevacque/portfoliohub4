@@ -608,8 +608,24 @@ const Portfolio = () => {
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>
                   Symbole {formData.type === 'crypto' && <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>(ex: BTC-USD, ETH-USD)</span>}
-                  {formData.type === 'etf' && <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>(ex: SPY, QQQ, VTI, IWDA.AS)</span>}
+                  {formData.type === 'etf' && <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>(ex: CW8.PA, CAC.PA, EWLD.PA, SPY)</span>}
                 </label>
+                {formData.type === 'etf' && (
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: 'var(--text-muted)', 
+                    marginBottom: '12px',
+                    padding: '12px',
+                    background: 'var(--bg-tertiary)',
+                    borderRadius: '8px',
+                    lineHeight: '1.6'
+                  }}>
+                    <strong style={{ color: 'var(--accent-primary)' }}>Format Yahoo Finance :</strong><br/>
+                    • ETF Paris : ajouter <code style={{ background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: '4px' }}>.PA</code> (ex: CW8.PA, CAC.PA, LQQ.PA)<br/>
+                    • ETF Amsterdam : ajouter <code style={{ background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: '4px' }}>.AS</code> (ex: IWDA.AS)<br/>
+                    • ETF US : pas de suffixe (ex: SPY, QQQ, VTI)
+                  </div>
+                )}
                 <input
                   type="text"
                   placeholder="Ex: AAPL, MSFT, BTC-USD"
