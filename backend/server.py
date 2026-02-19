@@ -488,6 +488,9 @@ async def get_portfolio_summary(user_id: str, portfolio_id: Optional[str] = None
     if portfolio_id:
         query["portfolio_id"] = portfolio_id
     
+    # Only get current positions (quantity > 0)
+    query["quantity"] = {"$gt": 0}
+    
     # Get positions
     positions = await db.positions.find(query).to_list(1000)
     
