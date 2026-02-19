@@ -719,8 +719,11 @@ async def get_performance(user_id: str, period: str = 'all', symbol: Optional[st
 @api_router.get("/analytics/compare-index")
 async def compare_with_index(user_id: str, period: str = 'ytd', index: str = '^GSPC'):
     """Compare portfolio performance with market index"""
-    # Get portfolio performance
-    positions = await db.positions.find({"user_id": user_id}).to_list(1000)
+    # Get portfolio performance - only current positions
+    positions = await db.positions.find({
+        "user_id": user_id,
+        "quantity": {"$gt": 0}
+    }).to_list(1000)
     
     if not positions:
         return {'data': []}
