@@ -69,13 +69,15 @@ const Portfolio = () => {
       }
       setActivePortfolio(currentPortfolio);
       
-      // Get positions for active portfolio
-      const [positionsData, correlationsData] = await Promise.all([
+      // Get positions, correlations and cash accounts
+      const [positionsData, correlationsData, cashData] = await Promise.all([
         portfolioAPI.getPositions(userId, currentPortfolio?.id),
-        analyticsAPI.getCorrelation(userId)
+        analyticsAPI.getCorrelation(userId),
+        axios.get(`${API}/cash-accounts?user_id=${userId}`)
       ]);
       setPositions(positionsData);
       setCorrelations(correlationsData);
+      setCashAccounts(cashData.data || []);
     } catch (error) {
       console.error('Error fetching portfolio data:', error);
     } finally {
