@@ -351,7 +351,12 @@ const Dashboard = () => {
 
         {/* Beta */}
         <div className="card">
-          <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '500' }}>Bêta du Portefeuille</div>
+          <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '500', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Bêta du Portefeuille</span>
+            <span style={{ fontSize: '11px', color: 'var(--accent-primary)', background: 'var(--accent-bg)', padding: '2px 6px', borderRadius: '4px' }}>
+              vs {PRESET_BENCHMARKS.find(b => b.value === benchmarkIndex)?.label || benchmarkIndex}
+            </span>
+          </div>
           <div style={{ fontSize: '28px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
             {portfolio.beta.toFixed(2)}
           </div>
