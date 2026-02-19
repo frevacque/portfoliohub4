@@ -108,6 +108,9 @@ async def get_positions(user_id: str, portfolio_id: Optional[str] = None):
     if portfolio_id:
         query["portfolio_id"] = portfolio_id
     
+    # Only get current positions (quantity > 0)
+    query["quantity"] = {"$gt": 0}
+    
     positions = await db.positions.find(query).to_list(1000)
     
     # Get user's benchmark setting
