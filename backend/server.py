@@ -230,29 +230,41 @@ async def add_position(position_data: PositionCreate, user_id: str):
         transaction_dict['portfolio_id'] = portfolio_id
         await db.transactions.insert_one(transaction_dict)
         
-        # Update cash balance (selling adds money)
-        balance_doc = await db.cash_balances.find_one({"user_id": user_id})
-        current_balance = balance_doc['balance'] if balance_doc else 0.0
-        new_balance = current_balance + sale_total
-        
-        if balance_doc:
-            await db.cash_balances.update_one(
-                {"user_id": user_id},
-                {"$set": {"balance": new_balance, "updated_at": datetime.utcnow()}}
+        new_balance = 0
+        # Update cash balance only if linked (selling adds money)
+        if link_to_cash:
+            account = await db.cash_accounts.find_one({"user_id": user_id, "currency": cash_currency})
+            current_balance = account['balance'] if account else 0.0
+            new_balance = current_balance + sale_total
+            
+            if account:
+                await db.cash_accounts.update_one(
+                    {"user_id": user_id, "currency": cash_currency},
+                    {"$set": {"balance": new_balance, "updated_at": datetime.utcnow()}}
+                )
+            else:
+                await db.cash_accounts.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "user_id": user_id,
+                    "currency": cash_currency,
+                    "balance": new_balance,
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                })
+            
+            # Create automatic cash transaction for the sale
+            cash_transaction = CashTransaction(
+                user_id=user_id,
+                type="deposit",
+                amount=sale_total,
+                description=f"Vente {quantity} x {symbol_upper} à {price}€",
+                date=transaction_date
             )
-        else:
-            new_balance_doc = CashBalance(user_id=user_id, balance=new_balance)
-            await db.cash_balances.insert_one(new_balance_doc.dict())
+            cash_tx_dict = cash_transaction.dict()
+            cash_tx_dict['currency'] = cash_currency
+            await db.cash_transactions.insert_one(cash_tx_dict)
         
-        # Create automatic cash transaction for the sale
-        cash_transaction = CashTransaction(
-            user_id=user_id,
-            type="deposit",
-            amount=sale_total,
-            description=f"Vente {quantity} x {symbol_upper} à {price}€",
-            date=transaction_date
-        )
-        await db.cash_transactions.insert_one(cash_transaction.dict())
+        cash_msg = f" +{round(sale_total, 2)} {cash_currency} ajoutés au solde cash." if link_to_cash else ""
         
         if new_quantity <= 0:
             # Position completely sold - delete it
@@ -262,8 +274,9 @@ async def add_position(position_data: PositionCreate, user_id: str):
                 "symbol": symbol_upper,
                 "quantity": 0,
                 "sale_total": round(sale_total, 2),
-                "new_cash_balance": round(new_balance, 2),
-                "message": f"Position {symbol_upper} entièrement vendue ({quantity} unités à {price}€). +{round(sale_total, 2)}€ ajoutés au solde cash."
+                "new_cash_balance": round(new_balance, 2) if link_to_cash else None,
+                "currency": cash_currency if link_to_cash else None,
+                "message": f"Position {symbol_upper} entièrement vendue ({quantity} unités à {price}€).{cash_msg}"
             }
         else:
             # Partial sell - update quantity (PRU stays the same)
@@ -282,8 +295,9 @@ async def add_position(position_data: PositionCreate, user_id: str):
                 "quantity": new_quantity,
                 "avg_price": existing_position['avg_price'],
                 "sale_total": round(sale_total, 2),
-                "new_cash_balance": round(new_balance, 2),
-                "message": f"Vente partielle: {quantity} unités vendues à {price}€. Reste {new_quantity} unités. +{round(sale_total, 2)}€ ajoutés au solde cash."
+                "new_cash_balance": round(new_balance, 2) if link_to_cash else None,
+                "currency": cash_currency if link_to_cash else None,
+                "message": f"Vente partielle: {quantity} unités vendues à {price}€. Reste {new_quantity} unités.{cash_msg}"
             }
     else:
         # BUY TRANSACTION
