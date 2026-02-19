@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { TrendingUp, PieChart, LineChart, BarChart3, Bell, Wrench, History, LogOut, Briefcase, Wallet } from 'lucide-react';
+import { TrendingUp, PieChart, LineChart, BarChart3, Bell, Wrench, History, LogOut, Briefcase } from 'lucide-react';
 
 const Navbar = ({ user, onLogout }) => {
   const location = useLocation();
@@ -9,7 +9,6 @@ const Navbar = ({ user, onLogout }) => {
     { path: '/dashboard', label: 'Dashboard', icon: TrendingUp },
     { path: '/portfolio', label: 'Positions', icon: PieChart },
     { path: '/portfolios', label: 'Portefeuilles', icon: Briefcase },
-    { path: '/cash', label: 'Cash', icon: Wallet },
     { path: '/performance', label: 'Performance', icon: LineChart },
     { path: '/analytics', label: 'Analyses', icon: BarChart3 },
     { path: '/alerts', label: 'Alertes', icon: Bell },
