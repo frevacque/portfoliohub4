@@ -109,6 +109,10 @@ async def get_positions(user_id: str, portfolio_id: Optional[str] = None):
     
     positions = await db.positions.find(query).to_list(1000)
     
+    # Get user's benchmark setting
+    user_settings = await db.user_settings.find_one({"user_id": user_id})
+    benchmark_index = user_settings.get('benchmark_index', '^GSPC') if user_settings else '^GSPC'
+    
     # Enrich with current market data and metrics
     enriched_positions = []
     for pos in positions:
@@ -121,8 +125,8 @@ async def get_positions(user_id: str, portfolio_id: Optional[str] = None):
         gain_loss = total_value - invested
         gain_loss_percent = (gain_loss / invested * 100) if invested > 0 else 0
         
-        # Calculate metrics
-        beta = analytics_service.calculate_position_beta(pos['symbol'])
+        # Calculate metrics using user's benchmark
+        beta = analytics_service.calculate_position_beta(pos['symbol'], market_index=benchmark_index)
         volatility = analytics_service.calculate_position_volatility(pos['symbol'])
         
         # Create clean position dict without MongoDB _id
