@@ -227,9 +227,11 @@ class CashBalance(BaseModel):
 # User Settings Models
 class UserSettingsUpdate(BaseModel):
     risk_free_rate: Optional[float] = None  # Taux sans risque en % (ex: 3.5 pour 3.5%)
+    benchmark_index: Optional[str] = None  # Index de référence (ex: ^FCHI, ^GSPC, URTH)
 
 class UserSettings(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     risk_free_rate: float = 3.0  # Default 3% (typical for government bonds)
+    benchmark_index: str = "^GSPC"  # Default S&P 500
     updated_at: datetime = Field(default_factory=datetime.utcnow)
