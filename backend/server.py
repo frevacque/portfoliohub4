@@ -926,7 +926,42 @@ async def delete_goal(goal_id: str, user_id: str):
         raise HTTPException(status_code=404, detail="Goal not found")
     return {"message": "Goal deleted successfully"}
 
-# Notes endpoints
+# Notes endpoints - Simple single note per position
+@api_router.get("/position-note/{position_id}")
+async def get_position_note(position_id: str, user_id: str):
+    """Get the single note for a position"""
+    note = await db.position_notes.find_one({"position_id": position_id, "user_id": user_id})
+    if note:
+        return {"content": note.get("content", ""), "updated_at": note.get("updated_at")}
+    return {"content": "", "updated_at": None}
+
+@api_router.put("/position-note/{position_id}")
+async def save_position_note(position_id: str, user_id: str, content: str = ""):
+    """Save or update the note for a position (upsert)"""
+    result = await db.position_notes.update_one(
+        {"position_id": position_id, "user_id": user_id},
+        {
+            "$set": {
+                "content": content,
+                "updated_at": datetime.utcnow()
+            },
+            "$setOnInsert": {
+                "position_id": position_id,
+                "user_id": user_id,
+                "created_at": datetime.utcnow()
+            }
+        },
+        upsert=True
+    )
+    return {"message": "Note sauvegardée", "content": content}
+
+@api_router.delete("/position-note/{position_id}")
+async def delete_position_note(position_id: str, user_id: str):
+    """Delete the note for a position"""
+    await db.position_notes.delete_one({"position_id": position_id, "user_id": user_id})
+    return {"message": "Note supprimée"}
+
+# Legacy Notes endpoints (keeping for backward compatibility)
 @api_router.get("/notes/{position_id}")
 async def get_notes(position_id: str, user_id: str):
     notes = await db.notes.find({"position_id": position_id, "user_id": user_id}).to_list(1000)
