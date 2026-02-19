@@ -733,6 +733,91 @@ const Portfolio = () => {
                 />
               </div>
 
+              {/* Link to Cash option */}
+              <div style={{ 
+                padding: '12px',
+                background: 'var(--bg-tertiary)',
+                borderRadius: '8px',
+                border: linkToCash ? '2px solid var(--accent-primary)' : '1px solid var(--border-primary)'
+              }}>
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '10px',
+                  cursor: 'pointer',
+                  userSelect: 'none'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={linkToCash}
+                    onChange={(e) => setLinkToCash(e.target.checked)}
+                    style={{ 
+                      width: '18px', 
+                      height: '18px',
+                      accentColor: 'var(--accent-primary)',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Wallet size={14} />
+                      Lier au solde cash
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      {formData.transaction_type === 'buy' 
+                        ? 'Le montant sera déduit de votre solde cash' 
+                        : 'Le montant sera ajouté à votre solde cash'}
+                    </div>
+                  </div>
+                </label>
+                
+                {linkToCash && (
+                  <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Devise:</span>
+                    <select
+                      value={selectedCashCurrency}
+                      onChange={(e) => setSelectedCashCurrency(e.target.value)}
+                      className="input-field"
+                      style={{ padding: '6px 10px', fontSize: '13px', flex: 1 }}
+                    >
+                      {CURRENCIES.map(curr => (
+                        <option key={curr.code} value={curr.code}>
+                          {curr.symbol} {curr.label}
+                        </option>
+                      ))}
+                    </select>
+                    {cashAccounts.find(a => a.currency === selectedCashCurrency) && (
+                      <span style={{ fontSize: '12px', color: 'var(--accent-primary)', fontWeight: '600' }}>
+                        Solde: {cashAccounts.find(a => a.currency === selectedCashCurrency)?.balance.toFixed(2)} {selectedCashCurrency}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Transaction amount preview */}
+              {formData.quantity && formData.avg_price && (
+                <div style={{ 
+                  padding: '10px 12px',
+                  background: formData.transaction_type === 'buy' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    Montant total:
+                  </span>
+                  <span style={{ 
+                    fontSize: '16px', 
+                    fontWeight: '700', 
+                    color: formData.transaction_type === 'buy' ? 'var(--danger)' : 'var(--success)'
+                  }}>
+                    {formData.transaction_type === 'buy' ? '-' : '+'}{(parseFloat(formData.quantity) * parseFloat(formData.avg_price)).toFixed(2)} €
+                  </span>
+                </div>
+              )}
+
               <button 
                 className={formData.transaction_type === 'buy' ? 'btn-primary' : 'btn-secondary'}
                 onClick={handleAddPosition} 
@@ -759,7 +844,6 @@ const Portfolio = () => {
       )}
 
       {/* Notes Modal */}
-      {/* Notes Modal - Simple notepad */}
       {showNotesModal && selectedPosition && (
         <div style={{
           position: 'fixed',
