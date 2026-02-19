@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, Calendar, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, RefreshCw, LineChart as LineChartIcon } from 'lucide-react';
 import { portfolioAPI, storage } from '../api';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Benchmarks prédéfinis
+const PRESET_BENCHMARKS = [
+  { value: '^FCHI', label: 'CAC 40', color: 'rgb(239, 68, 68)' },
+  { value: '^GSPC', label: 'S&P 500', color: 'rgb(59, 130, 246)' },
+  { value: 'URTH', label: 'MSCI World', color: 'rgb(168, 85, 247)' },
+  { value: '^STOXX50E', label: 'Euro Stoxx 50', color: 'rgb(34, 197, 94)' },
+  { value: '^NDX', label: 'Nasdaq 100', color: 'rgb(249, 115, 22)' },
+];
 
 const Performance = () => {
   const [period, setPeriod] = useState('ytd');
@@ -16,6 +25,8 @@ const Performance = () => {
   const [indexComparison, setIndexComparison] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [benchmarkIndex, setBenchmarkIndex] = useState('^GSPC');
+  const [comparisonLoading, setComparisonLoading] = useState(false);
 
   const userId = storage.getUserId();
 
