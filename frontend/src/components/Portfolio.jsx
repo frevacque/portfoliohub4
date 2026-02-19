@@ -106,7 +106,9 @@ const Portfolio = () => {
         quantity: parseFloat(formData.quantity),
         avg_price: parseFloat(formData.avg_price),
         purchase_date: new Date(formData.purchase_date).toISOString(),
-        portfolio_id: activePortfolio?.id || null
+        portfolio_id: activePortfolio?.id || null,
+        link_to_cash: linkToCash,
+        cash_currency: linkToCash ? selectedCashCurrency : null
       });
 
       // Refresh data
@@ -127,6 +129,7 @@ const Portfolio = () => {
         avg_price: '',
         purchase_date: new Date().toISOString().split('T')[0]
       });
+      setLinkToCash(false);
     } catch (err) {
       setError(err.response?.data?.detail || 'Erreur lors de l\'opération');
     } finally {
