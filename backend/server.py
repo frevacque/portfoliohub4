@@ -1218,7 +1218,96 @@ async def update_user_settings(settings_data: UserSettingsUpdate, user_id: str):
         "benchmark_index": settings_data.benchmark_index
     }
 
-# Cash Management endpoints
+# Cash Management endpoints - Multi-currency accounts
+@api_router.get("/cash-accounts")
+async def get_cash_accounts(user_id: str):
+    """Get all cash accounts with different currencies"""
+    accounts = await db.cash_accounts.find({"user_id": user_id}).to_list(100)
+    
+    # If no accounts, create default EUR account
+    if not accounts:
+        default_account = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "currency": "EUR",
+            "balance": 0.0,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        await db.cash_accounts.insert_one(default_account)
+        accounts = [default_account]
+    
+    # Clean MongoDB _id
+    return [{
+        "id": acc.get("id"),
+        "currency": acc.get("currency"),
+        "balance": acc.get("balance", 0.0),
+        "updated_at": acc.get("updated_at").isoformat() if hasattr(acc.get("updated_at"), 'isoformat') else acc.get("updated_at")
+    } for acc in accounts]
+
+@api_router.post("/cash-accounts")
+async def create_cash_account(user_id: str, currency: str = "EUR"):
+    """Create a new cash account for a specific currency"""
+    # Check if account already exists for this currency
+    existing = await db.cash_accounts.find_one({"user_id": user_id, "currency": currency})
+    if existing:
+        return {"message": "Compte déjà existant", "id": existing.get("id"), "currency": currency}
+    
+    new_account = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "currency": currency,
+        "balance": 0.0,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    await db.cash_accounts.insert_one(new_account)
+    return {"message": "Compte créé", "id": new_account["id"], "currency": currency}
+
+@api_router.put("/cash-accounts/{currency}")
+async def update_cash_account(currency: str, user_id: str, amount: float, operation: str = "set"):
+    """Update cash account balance. Operation: 'set', 'add', 'subtract'"""
+    account = await db.cash_accounts.find_one({"user_id": user_id, "currency": currency})
+    
+    if not account:
+        # Create account if doesn't exist
+        account = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "currency": currency,
+            "balance": 0.0,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        await db.cash_accounts.insert_one(account)
+    
+    current_balance = account.get("balance", 0.0)
+    
+    if operation == "set":
+        new_balance = amount
+    elif operation == "add":
+        new_balance = current_balance + amount
+    elif operation == "subtract":
+        new_balance = current_balance - amount
+    else:
+        new_balance = amount
+    
+    await db.cash_accounts.update_one(
+        {"user_id": user_id, "currency": currency},
+        {"$set": {"balance": new_balance, "updated_at": datetime.utcnow()}}
+    )
+    
+    return {"message": "Solde mis à jour", "currency": currency, "balance": new_balance}
+
+@api_router.delete("/cash-accounts/{currency}")
+async def delete_cash_account(currency: str, user_id: str):
+    """Delete a cash account"""
+    result = await db.cash_accounts.delete_one({"user_id": user_id, "currency": currency})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Compte non trouvé")
+    return {"message": "Compte supprimé"}
+
+# Legacy Cash endpoints (keeping for backward compatibility)
 @api_router.get("/cash/balance")
 async def get_cash_balance(user_id: str):
     """Get current cash balance"""
