@@ -242,15 +242,47 @@ const Analytics = () => {
                     <ZAxis type="number" dataKey="value" range={[100, 1000]} />
                     <Tooltip 
                       cursor={{ strokeDasharray: '3 3' }}
-                      contentStyle={{ 
-                        background: 'var(--bg-secondary)', 
-                        border: '1px solid var(--border-primary)',
-                        borderRadius: '8px',
-                        color: 'var(--text-primary)'
-                      }}
-                      formatter={(value, name) => {
-                        if (name === 'value') return [formatCurrency(value), 'Valeur'];
-                        return [`${value.toFixed(2)}%`, name === 'volatility' ? 'Volatilité' : 'Rendement'];
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div style={{ 
+                              background: 'rgb(26, 28, 30)', 
+                              border: '1px solid rgb(63, 63, 63)',
+                              borderRadius: '8px',
+                              padding: '12px',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
+                            }}>
+                              <div style={{ 
+                                fontSize: '16px', 
+                                fontWeight: '700', 
+                                color: 'rgb(218, 255, 1)', 
+                                marginBottom: '8px',
+                                borderBottom: '1px solid rgb(63, 63, 63)',
+                                paddingBottom: '8px'
+                              }}>
+                                {data.symbol}
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ color: 'rgb(255, 255, 255)', fontSize: '13px' }}>
+                                  <span style={{ color: 'rgb(161, 161, 170)' }}>Rendement: </span>
+                                  <span style={{ color: data.return >= 0 ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)', fontWeight: '600' }}>
+                                    {data.return >= 0 ? '+' : ''}{data.return.toFixed(2)}%
+                                  </span>
+                                </div>
+                                <div style={{ color: 'rgb(255, 255, 255)', fontSize: '13px' }}>
+                                  <span style={{ color: 'rgb(161, 161, 170)' }}>Volatilité: </span>
+                                  <span style={{ fontWeight: '600' }}>{data.volatility.toFixed(2)}%</span>
+                                </div>
+                                <div style={{ color: 'rgb(255, 255, 255)', fontSize: '13px' }}>
+                                  <span style={{ color: 'rgb(161, 161, 170)' }}>Valeur: </span>
+                                  <span style={{ fontWeight: '600' }}>{formatCurrency(data.value)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
                       }}
                     />
                     <Scatter name="Positions" data={riskReturnData} fill="var(--accent-primary)">
