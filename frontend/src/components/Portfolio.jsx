@@ -1,16 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, TrendingUp, TrendingDown, X, Trash2, Calendar, Briefcase, StickyNote, Save, Merge } from 'lucide-react';
+import { Plus, Search, TrendingUp, TrendingDown, X, Trash2, Calendar, Briefcase, StickyNote, Save, Merge, Wallet, DollarSign } from 'lucide-react';
 import { portfolioAPI, analyticsAPI, storage, portfoliosAPI } from '../api';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Devises disponibles
+const CURRENCIES = [
+  { code: 'EUR', symbol: '€', label: 'Euro' },
+  { code: 'USD', symbol: '$', label: 'Dollar US' },
+  { code: 'GBP', symbol: '£', label: 'Livre Sterling' },
+  { code: 'CHF', symbol: 'CHF', label: 'Franc Suisse' },
+];
+
 const Portfolio = () => {
   const [positions, setPositions] = useState([]);
   const [correlations, setCorrelations] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
+  const [showCashModal, setShowCashModal] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [noteContent, setNoteContent] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
@@ -21,6 +30,9 @@ const Portfolio = () => {
   const [merging, setMerging] = useState(false);
   const [activePortfolio, setActivePortfolio] = useState(null);
   const [portfolios, setPortfolios] = useState([]);
+  const [cashAccounts, setCashAccounts] = useState([]);
+  const [linkToCash, setLinkToCash] = useState(false);
+  const [selectedCashCurrency, setSelectedCashCurrency] = useState('EUR');
   const [formData, setFormData] = useState({
     symbol: '',
     type: 'stock',
