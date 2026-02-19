@@ -133,49 +133,41 @@ const Portfolio = () => {
     }
   };
 
-  // Notes functions
+  // Notes functions - Simple single note per position
   const openNotesModal = async (position) => {
     setSelectedPosition(position);
     setShowNotesModal(true);
+    setNoteSaved(false);
     try {
-      const response = await axios.get(`${API}/notes/${position.id}?user_id=${userId}`);
-      // Clean notes from MongoDB _id
-      const cleanNotes = response.data.map(note => ({
-        ...note,
-        created_at: note.created_at ? new Date(note.created_at).toLocaleString('fr-FR') : 'Date inconnue'
-      }));
-      setPositionNotes(cleanNotes);
+      const response = await axios.get(`${API}/position-note/${position.id}?user_id=${userId}`);
+      setNoteContent(response.data.content || '');
     } catch (error) {
-      console.error('Error fetching notes:', error);
-      setPositionNotes([]);
+      console.error('Error fetching note:', error);
+      setNoteContent('');
     }
   };
 
-  const handleAddNote = async () => {
-    if (!newNote.trim()) return;
-    
+  const handleSaveNote = async () => {
+    if (!selectedPosition) return;
+    setNoteSaving(true);
     try {
-      await axios.post(`${API}/notes?user_id=${userId}`, {
-        position_id: selectedPosition.id,
-        content: newNote
-      });
-      setNewNote('');
-      // Refresh notes
-      const response = await axios.get(`${API}/notes/${selectedPosition.id}?user_id=${userId}`);
-      const cleanNotes = response.data.map(note => ({
-        ...note,
-        created_at: note.created_at ? new Date(note.created_at).toLocaleString('fr-FR') : 'Date inconnue'
-      }));
-      setPositionNotes(cleanNotes);
+      await axios.put(`${API}/position-note/${selectedPosition.id}?user_id=${userId}&content=${encodeURIComponent(noteContent)}`);
+      setNoteSaved(true);
+      setTimeout(() => setNoteSaved(false), 2000);
     } catch (error) {
-      console.error('Error adding note:', error);
+      console.error('Error saving note:', error);
+    } finally {
+      setNoteSaving(false);
     }
   };
 
-  const handleDeleteNote = async (noteId) => {
+  const handleDeleteNote = async () => {
+    if (!selectedPosition) return;
     try {
-      await axios.delete(`${API}/notes/${noteId}?user_id=${userId}`);
-      setPositionNotes(positionNotes.filter(n => n.id !== noteId));
+      await axios.delete(`${API}/position-note/${selectedPosition.id}?user_id=${userId}`);
+      setNoteContent('');
+      setNoteSaved(true);
+      setTimeout(() => setNoteSaved(false), 2000);
     } catch (error) {
       console.error('Error deleting note:', error);
     }
