@@ -12,8 +12,9 @@ const Portfolio = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState(null);
-  const [positionNotes, setPositionNotes] = useState([]);
-  const [newNote, setNewNote] = useState('');
+  const [noteContent, setNoteContent] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
