@@ -303,6 +303,42 @@ async def add_position(position_data: PositionCreate, user_id: str):
         # BUY TRANSACTION
         buy_total = quantity * price
         
+        # Update cash balance if linked (buying subtracts money)
+        new_balance = None
+        cash_msg = ""
+        if link_to_cash:
+            account = await db.cash_accounts.find_one({"user_id": user_id, "currency": cash_currency})
+            current_balance = account['balance'] if account else 0.0
+            new_balance = current_balance - buy_total
+            
+            if account:
+                await db.cash_accounts.update_one(
+                    {"user_id": user_id, "currency": cash_currency},
+                    {"$set": {"balance": new_balance, "updated_at": datetime.utcnow()}}
+                )
+            else:
+                await db.cash_accounts.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "user_id": user_id,
+                    "currency": cash_currency,
+                    "balance": new_balance,
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                })
+            
+            # Create automatic cash transaction for the purchase
+            cash_transaction = CashTransaction(
+                user_id=user_id,
+                type="withdrawal",
+                amount=buy_total,
+                description=f"Achat {quantity} x {symbol_upper} à {price}€",
+                date=transaction_date
+            )
+            cash_tx_dict = cash_transaction.dict()
+            cash_tx_dict['currency'] = cash_currency
+            await db.cash_transactions.insert_one(cash_tx_dict)
+            cash_msg = f" -{round(buy_total, 2)} {cash_currency} déduits du solde cash."
+        
         if existing_position:
             # Merge with existing position
             old_quantity = existing_position['quantity']
@@ -341,7 +377,9 @@ async def add_position(position_data: PositionCreate, user_id: str):
                 "symbol": symbol_upper,
                 "quantity": total_quantity,
                 "avg_price": round(weighted_avg_price, 4),
-                "message": f"Achat fusionné: {old_quantity} + {quantity} = {total_quantity} unités au PRU de {round(weighted_avg_price, 2)}€"
+                "new_cash_balance": round(new_balance, 2) if link_to_cash else None,
+                "currency": cash_currency if link_to_cash else None,
+                "message": f"Achat fusionné: {old_quantity} + {quantity} = {total_quantity} unités au PRU de {round(weighted_avg_price, 2)}€.{cash_msg}"
             }
         else:
             # Create new position
@@ -378,7 +416,9 @@ async def add_position(position_data: PositionCreate, user_id: str):
                 "quantity": quantity,
                 "avg_price": price,
                 "name": ticker_info['name'],
-                "message": f"Nouvelle position créée: {quantity} unités de {symbol_upper} à {price}€"
+                "new_cash_balance": round(new_balance, 2) if link_to_cash else None,
+                "currency": cash_currency if link_to_cash else None,
+                "message": f"Nouvelle position créée: {quantity} unités de {symbol_upper} à {price}€.{cash_msg}"
             }
 
 @api_router.delete("/positions/{position_id}")
