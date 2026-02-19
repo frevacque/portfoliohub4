@@ -571,9 +571,10 @@ const Dashboard = () => {
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 9999,
-          padding: '24px'
+          padding: '16px',
+          overflow: 'auto'
         }}>
-          <div className="card" style={{ maxWidth: '450px', width: '100%', position: 'relative' }}>
+          <div className="card" style={{ maxWidth: '480px', width: '100%', position: 'relative', padding: '24px', maxHeight: '90vh', overflow: 'auto' }}>
             <button
               onClick={() => setShowSettingsModal(false)}
               style={{
@@ -587,20 +588,101 @@ const Dashboard = () => {
                 padding: '8px'
               }}
             >
-              <X size={24} />
+              <X size={20} />
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <Settings size={28} color="var(--accent-primary)" />
-              <h2 className="h2">Paramètres du Dashboard</h2>
+              <Settings size={24} color="var(--accent-primary)" />
+              <h2 className="h3">Paramètres du Dashboard</h2>
             </div>
 
+            {/* Benchmark Section */}
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                <LineChart size={18} />
+                Benchmark de référence
+              </label>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                Utilisé pour le calcul du Bêta et la comparaison de performance.
+              </p>
+              
+              {/* Preset Benchmarks */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                {PRESET_BENCHMARKS.map(benchmark => (
+                  <button
+                    key={benchmark.value}
+                    onClick={() => {
+                      setTempBenchmark(benchmark.value);
+                      setCustomBenchmark('');
+                    }}
+                    style={{
+                      padding: '8px 12px',
+                      border: `2px solid ${tempBenchmark === benchmark.value && !customBenchmark ? 'var(--accent-primary)' : 'var(--border-primary)'}`,
+                      borderRadius: '8px',
+                      background: tempBenchmark === benchmark.value && !customBenchmark ? 'var(--accent-bg)' : 'transparent',
+                      color: tempBenchmark === benchmark.value && !customBenchmark ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '2px'
+                    }}
+                  >
+                    <span style={{ fontWeight: '600' }}>{benchmark.label}</span>
+                    <span style={{ fontSize: '10px', opacity: 0.7 }}>{benchmark.description}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Benchmark */}
+              <div style={{ 
+                padding: '12px',
+                background: 'var(--bg-tertiary)',
+                borderRadius: '8px'
+              }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)' }}>
+                  Ou entrez un ticker personnalisé :
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: ^IXIC, IWDA.AS, VTI..."
+                  value={customBenchmark}
+                  onChange={(e) => setCustomBenchmark(e.target.value.toUpperCase())}
+                  className="input-field"
+                  style={{ fontSize: '14px', padding: '10px 12px' }}
+                />
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                  Format Yahoo Finance : ^FCHI (CAC40), ^GSPC (S&P500), URTH (MSCI World)
+                </p>
+              </div>
+              
+              {/* Current benchmark display */}
+              <div style={{ 
+                marginTop: '12px', 
+                padding: '8px 12px', 
+                background: 'var(--bg-secondary)', 
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Benchmark actuel :</span>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--accent-primary)' }}>
+                  {PRESET_BENCHMARKS.find(b => b.value === benchmarkIndex)?.label || benchmarkIndex}
+                </span>
+              </div>
+            </div>
+
+            {/* Risk-Free Rate Section */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                <Percent size={18} />
                 Taux Sans Risque (RFR)
               </label>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                Utilisé pour le calcul du ratio de Sharpe. Généralement basé sur le rendement des obligations d'État.
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                Utilisé pour le calcul du ratio de Sharpe.
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <input
@@ -611,23 +693,23 @@ const Dashboard = () => {
                   value={tempRFR}
                   onChange={(e) => setTempRFR(parseFloat(e.target.value) || 0)}
                   className="input-field"
-                  style={{ flex: 1, textAlign: 'center', fontSize: '20px', fontWeight: '600' }}
+                  style={{ flex: 1, textAlign: 'center', fontSize: '18px', fontWeight: '600' }}
                 />
-                <Percent size={24} color="var(--text-muted)" />
+                <Percent size={20} color="var(--text-muted)" />
               </div>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
                 {[1, 2, 3, 4, 5].map(rate => (
                   <button
                     key={rate}
                     onClick={() => setTempRFR(rate)}
                     style={{
-                      padding: '8px 16px',
+                      padding: '6px 14px',
                       border: `1px solid ${tempRFR === rate ? 'var(--accent-primary)' : 'var(--border-primary)'}`,
-                      borderRadius: '8px',
+                      borderRadius: '6px',
                       background: tempRFR === rate ? 'var(--accent-bg)' : 'transparent',
                       color: tempRFR === rate ? 'var(--accent-primary)' : 'var(--text-secondary)',
                       cursor: 'pointer',
-                      fontSize: '14px',
+                      fontSize: '13px',
                       fontWeight: '600'
                     }}
                   >
@@ -639,7 +721,7 @@ const Dashboard = () => {
 
             <button 
               className="btn-primary" 
-              onClick={handleSaveRFR}
+              onClick={handleSaveSettings}
               style={{ width: '100%' }}
             >
               Enregistrer
