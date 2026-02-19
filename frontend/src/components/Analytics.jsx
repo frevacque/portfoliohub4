@@ -278,7 +278,14 @@ const Analytics = () => {
                         <th style={{ padding: '12px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: '600' }}>% Portefeuille</th>
                         <th style={{ padding: '12px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: '600' }}>Rendement</th>
                         <th style={{ padding: '12px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: '600' }}>Volatilité</th>
-                        <th style={{ padding: '12px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: '600' }}>Beta</th>
+                        <th style={{ padding: '12px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: '600' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+                            <span>Beta</span>
+                            <span style={{ fontSize: '10px', color: 'var(--accent-primary)', background: 'var(--accent-bg)', padding: '2px 6px', borderRadius: '4px' }}>
+                              vs {PRESET_BENCHMARKS.find(b => b.value === benchmarkIndex)?.label || benchmarkIndex}
+                            </span>
+                          </div>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
