@@ -678,8 +678,11 @@ async def get_performance(user_id: str, period: str = 'all', symbol: Optional[st
             **perf_data
         }
     else:
-        # Get portfolio performance
-        positions = await db.positions.find({"user_id": user_id}).to_list(1000)
+        # Get portfolio performance - only current positions
+        positions = await db.positions.find({
+            "user_id": user_id,
+            "quantity": {"$gt": 0}
+        }).to_list(1000)
         
         if not positions:
             return {
