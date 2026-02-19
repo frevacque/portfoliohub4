@@ -241,49 +241,86 @@ const Performance = () => {
       {/* Index Comparison */}
       {indexComparison && indexComparison.data && indexComparison.data.length > 0 && (
         <div className="card" style={{ marginBottom: '32px' }}>
-          <h2 className="h2" style={{ marginBottom: '24px' }}>Comparaison avec le S&P 500</h2>
-          <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={indexComparison.data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-              <XAxis 
-                dataKey="date" 
-                stroke="rgb(161, 161, 170)"
-                tick={{ fill: 'rgb(161, 161, 170)', fontSize: 12 }}
-              />
-              <YAxis 
-                stroke="rgb(161, 161, 170)"
-                tick={{ fill: 'rgb(161, 161, 170)', fontSize: 12 }}
-                tickFormatter={(value) => `${value.toFixed(0)}%`}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  background: 'rgb(26, 28, 30)', 
-                  border: '1px solid rgb(63, 63, 63)',
-                  borderRadius: '8px',
-                  color: 'rgb(255, 255, 255)'
-                }}
-                formatter={(value) => `${value.toFixed(2)}%`}
-              />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="portfolio_percent" 
-                stroke="rgb(218, 255, 1)" 
-                strokeWidth={2}
-                name="Votre Portefeuille"
-                dot={false}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="index_percent" 
-                stroke="rgb(59, 130, 246)" 
-                strokeWidth={2}
-                name="S&P 500"
-                strokeDasharray="5 5"
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <LineChartIcon size={24} color="var(--accent-primary)" />
+              <h2 className="h2">Comparaison avec l'indice</h2>
+            </div>
+            
+            {/* Benchmark Selector */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {PRESET_BENCHMARKS.map(benchmark => (
+                <button
+                  key={benchmark.value}
+                  onClick={() => handleBenchmarkChange(benchmark.value)}
+                  disabled={comparisonLoading}
+                  style={{
+                    padding: '6px 12px',
+                    border: `2px solid ${benchmarkIndex === benchmark.value ? benchmark.color : 'var(--border-primary)'}`,
+                    borderRadius: '6px',
+                    background: benchmarkIndex === benchmark.value ? `${benchmark.color}20` : 'transparent',
+                    color: benchmarkIndex === benchmark.value ? benchmark.color : 'var(--text-secondary)',
+                    cursor: comparisonLoading ? 'wait' : 'pointer',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    transition: 'all 0.2s ease',
+                    opacity: comparisonLoading ? 0.6 : 1
+                  }}
+                >
+                  {benchmark.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {comparisonLoading ? (
+            <div style={{ height: '350px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ color: 'var(--text-muted)' }}>Chargement de la comparaison...</div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={indexComparison.data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="rgb(161, 161, 170)"
+                  tick={{ fill: 'rgb(161, 161, 170)', fontSize: 12 }}
+                />
+                <YAxis 
+                  stroke="rgb(161, 161, 170)"
+                  tick={{ fill: 'rgb(161, 161, 170)', fontSize: 12 }}
+                  tickFormatter={(value) => `${value.toFixed(0)}%`}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    background: 'rgb(26, 28, 30)', 
+                    border: '1px solid rgb(63, 63, 63)',
+                    borderRadius: '8px',
+                    color: 'rgb(255, 255, 255)'
+                  }}
+                  formatter={(value) => `${value.toFixed(2)}%`}
+                />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="portfolio_percent" 
+                  stroke="rgb(218, 255, 1)" 
+                  strokeWidth={2}
+                  name="Votre Portefeuille"
+                  dot={false}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="index_percent" 
+                  stroke={PRESET_BENCHMARKS.find(b => b.value === benchmarkIndex)?.color || 'rgb(59, 130, 246)'} 
+                  strokeWidth={2}
+                  name={PRESET_BENCHMARKS.find(b => b.value === benchmarkIndex)?.label || benchmarkIndex}
+                  strokeDasharray="5 5"
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
       )}
 
