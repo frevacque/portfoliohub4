@@ -719,6 +719,7 @@ const Portfolio = () => {
       )}
 
       {/* Notes Modal */}
+      {/* Notes Modal - Simple notepad */}
       {showNotesModal && selectedPosition && (
         <div style={{
           position: 'fixed',
@@ -731,21 +732,19 @@ const Portfolio = () => {
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 9999,
-          padding: '24px'
+          padding: '16px'
         }}>
           <div className="card" style={{
-            maxWidth: '600px',
+            maxWidth: '500px',
             width: '100%',
-            maxHeight: '80vh',
-            overflow: 'auto',
-            position: 'relative'
+            position: 'relative',
+            padding: '24px'
           }}>
             <button
               onClick={() => {
                 setShowNotesModal(false);
                 setSelectedPosition(null);
-                setPositionNotes([]);
-                setNewNote('');
+                setNoteContent('');
               }}
               style={{
                 position: 'absolute',
@@ -755,87 +754,74 @@ const Portfolio = () => {
                 border: 'none',
                 color: 'var(--text-muted)',
                 cursor: 'pointer',
-                padding: '8px'
+                padding: '4px'
               }}
             >
-              <X size={24} />
+              <X size={20} />
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <StickyNote size={28} color="var(--accent-primary)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <StickyNote size={24} color="var(--accent-primary)" />
               <div>
-                <h2 className="h2">Notes - {selectedPosition.symbol}</h2>
-                <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{selectedPosition.name}</p>
+                <h2 className="h3">Notes - {selectedPosition.symbol}</h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{selectedPosition.name}</p>
               </div>
             </div>
 
-            {/* Add new note */}
-            <div style={{ marginBottom: '24px' }}>
-              <textarea
-                placeholder="Ajouter une note (analyse, stratégie, rappel...)"
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                className="input-field"
-                rows={3}
-                style={{ resize: 'vertical', marginBottom: '12px' }}
-              />
+            {/* Simple textarea notepad */}
+            <textarea
+              placeholder="Écrivez vos notes ici (analyse, stratégie, rappels...)"
+              value={noteContent}
+              onChange={(e) => setNoteContent(e.target.value)}
+              className="input-field"
+              rows={8}
+              style={{ 
+                resize: 'vertical', 
+                marginBottom: '16px',
+                minHeight: '150px',
+                fontSize: '14px',
+                lineHeight: '1.6'
+              }}
+            />
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: '12px' }}>
               <button 
                 className="btn-primary" 
-                onClick={handleAddNote}
-                disabled={!newNote.trim()}
-                style={{ width: '100%' }}
+                onClick={handleSaveNote}
+                disabled={noteSaving}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
-                <Save size={18} />
-                Enregistrer la note
+                {noteSaving ? (
+                  <>Sauvegarde...</>
+                ) : noteSaved ? (
+                  <>✓ Sauvegardé</>
+                ) : (
+                  <><Save size={18} /> Sauvegarder</>
+                )}
               </button>
-            </div>
-
-            {/* Notes list */}
-            <div>
-              <h3 className="h3" style={{ marginBottom: '16px' }}>Historique des notes</h3>
-              {positionNotes.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-                  <StickyNote size={32} style={{ marginBottom: '12px', opacity: 0.5 }} />
-                  <p>Aucune note pour cette position</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {positionNotes.map(note => (
-                    <div 
-                      key={note.id} 
-                      style={{ 
-                        padding: '16px', 
-                        background: 'var(--bg-tertiary)', 
-                        borderRadius: '12px',
-                        position: 'relative'
-                      }}
-                    >
-                      <button
-                        onClick={() => handleDeleteNote(note.id)}
-                        style={{
-                          position: 'absolute',
-                          top: '12px',
-                          right: '12px',
-                          background: 'transparent',
-                          border: 'none',
-                          color: 'var(--text-muted)',
-                          cursor: 'pointer',
-                          padding: '4px'
-                        }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                      <p style={{ color: 'var(--text-primary)', marginBottom: '8px', paddingRight: '24px' }}>
-                        {note.content}
-                      </p>
-                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                        {note.created_at}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+              
+              {noteContent && (
+                <button 
+                  className="btn-secondary" 
+                  onClick={handleDeleteNote}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    gap: '8px',
+                    color: 'var(--danger)',
+                    borderColor: 'var(--danger)'
+                  }}
+                >
+                  <Trash2 size={18} /> Effacer
+                </button>
               )}
             </div>
+
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px', textAlign: 'center' }}>
+              Vos notes sont privées et liées à cette position
+            </p>
           </div>
         </div>
       )}
