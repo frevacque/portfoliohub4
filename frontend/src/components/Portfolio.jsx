@@ -1005,6 +1005,281 @@ const Portfolio = () => {
           </div>
         </div>
       )}
+
+      {/* Cash Management Modal */}
+      {showCashModal && (
+        <CashManagementModal 
+          cashAccounts={cashAccounts}
+          setCashAccounts={setCashAccounts}
+          userId={userId}
+          onClose={() => setShowCashModal(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+// Cash Management Modal Component
+const CashManagementModal = ({ cashAccounts, setCashAccounts, userId, onClose }) => {
+  const [newCurrency, setNewCurrency] = useState('USD');
+  const [editAmount, setEditAmount] = useState('');
+  const [editCurrency, setEditCurrency] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleAddAccount = async () => {
+    if (cashAccounts.find(a => a.currency === newCurrency)) {
+      alert('Ce compte existe déjà');
+      return;
+    }
+    setLoading(true);
+    try {
+      await axios.post(`${API}/cash-accounts?user_id=${userId}&currency=${newCurrency}`);
+      const response = await axios.get(`${API}/cash-accounts?user_id=${userId}`);
+      setCashAccounts(response.data);
+    } catch (error) {
+      console.error('Error adding account:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateBalance = async (currency) => {
+    if (!editAmount) return;
+    setLoading(true);
+    try {
+      await axios.put(`${API}/cash-accounts/${currency}?user_id=${userId}&amount=${parseFloat(editAmount)}&operation=set`);
+      const response = await axios.get(`${API}/cash-accounts?user_id=${userId}`);
+      setCashAccounts(response.data);
+      setEditCurrency(null);
+      setEditAmount('');
+    } catch (error) {
+      console.error('Error updating balance:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async (currency) => {
+    if (!window.confirm(`Supprimer le compte ${currency} ?`)) return;
+    setLoading(true);
+    try {
+      await axios.delete(`${API}/cash-accounts/${currency}?user_id=${userId}`);
+      const response = await axios.get(`${API}/cash-accounts?user_id=${userId}`);
+      setCashAccounts(response.data);
+    } catch (error) {
+      console.error('Error deleting account:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      padding: '16px'
+    }}>
+      <div className="card" style={{ maxWidth: '500px', width: '100%', position: 'relative', padding: '24px' }}>
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--text-muted)',
+            cursor: 'pointer',
+            padding: '4px'
+          }}
+        >
+          <X size={20} />
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+          <Wallet size={24} color="var(--accent-primary)" />
+          <h2 className="h3">Gestion des Comptes Cash</h2>
+        </div>
+
+        {/* Existing Accounts */}
+        <div style={{ marginBottom: '24px' }}>
+          <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+            Comptes existants
+          </h4>
+          
+          {cashAccounts.length === 0 ? (
+            <div style={{ color: 'var(--text-muted)', fontSize: '13px', padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '8px', textAlign: 'center' }}>
+              Aucun compte configuré
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {cashAccounts.map(account => {
+                const currency = CURRENCIES.find(c => c.code === account.currency);
+                const isEditing = editCurrency === account.currency;
+                
+                return (
+                  <div 
+                    key={account.currency}
+                    style={{ 
+                      padding: '16px',
+                      background: 'var(--bg-tertiary)',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ 
+                        width: '40px', 
+                        height: '40px', 
+                        background: 'var(--accent-bg)', 
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        fontWeight: '700',
+                        color: 'var(--accent-primary)'
+                      }}>
+                        {currency?.symbol || account.currency}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                          {currency?.label || account.currency}
+                        </div>
+                        {isEditing ? (
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                            <input
+                              type="number"
+                              step="any"
+                              value={editAmount}
+                              onChange={(e) => setEditAmount(e.target.value)}
+                              placeholder="Nouveau solde"
+                              className="input-field"
+                              style={{ padding: '6px 10px', fontSize: '13px', width: '120px' }}
+                            />
+                            <button
+                              onClick={() => handleUpdateBalance(account.currency)}
+                              disabled={loading}
+                              style={{
+                                padding: '6px 12px',
+                                background: 'var(--success)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                            >
+                              OK
+                            </button>
+                            <button
+                              onClick={() => { setEditCurrency(null); setEditAmount(''); }}
+                              style={{
+                                padding: '6px 12px',
+                                background: 'var(--bg-secondary)',
+                                color: 'var(--text-muted)',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ 
+                            fontSize: '18px', 
+                            fontWeight: '700', 
+                            color: account.balance >= 0 ? 'var(--success)' : 'var(--danger)'
+                          }}>
+                            {account.balance.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} {currency?.symbol}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {!isEditing && (
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => { setEditCurrency(account.currency); setEditAmount(account.balance.toString()); }}
+                          style={{
+                            padding: '8px',
+                            background: 'var(--bg-secondary)',
+                            color: 'var(--text-secondary)',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer'
+                          }}
+                          title="Modifier"
+                        >
+                          <DollarSign size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAccount(account.currency)}
+                          disabled={loading}
+                          style={{
+                            padding: '8px',
+                            background: 'var(--danger-bg)',
+                            color: 'var(--danger)',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer'
+                          }}
+                          title="Supprimer"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Add New Account */}
+        <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '20px' }}>
+          <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+            Ajouter un compte
+          </h4>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <select
+              value={newCurrency}
+              onChange={(e) => setNewCurrency(e.target.value)}
+              className="input-field"
+              style={{ flex: 1, padding: '10px 12px' }}
+            >
+              {CURRENCIES.filter(c => !cashAccounts.find(a => a.currency === c.code)).map(curr => (
+                <option key={curr.code} value={curr.code}>
+                  {curr.symbol} {curr.label}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleAddAccount}
+              disabled={loading || cashAccounts.length >= CURRENCIES.length}
+              className="btn-primary"
+              style={{ padding: '10px 20px' }}
+            >
+              <Plus size={18} />
+              Ajouter
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
