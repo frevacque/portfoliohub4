@@ -440,15 +440,41 @@ const Portfolio = () => {
                 {correlations.map((corr, idx) => {
                   let interpretation = '';
                   let color = '';
-                  if (corr.correlation > 0.7) {
-                    interpretation = 'Forte corrélation';
+                  const value = corr.correlation;
+                  
+                  // Corrélations positives
+                  if (value >= 0.80) {
+                    interpretation = 'Très forte corrélation positive';
+                    color = 'var(--danger)';
+                  } else if (value >= 0.50) {
+                    interpretation = 'Forte corrélation positive';
                     color = 'var(--warning)';
-                  } else if (corr.correlation > 0.4) {
-                    interpretation = 'Corrélation modérée';
+                  } else if (value >= 0.30) {
+                    interpretation = 'Corrélation modérée positive';
                     color = 'var(--info)';
-                  } else {
-                    interpretation = 'Faible corrélation';
+                  } else if (value >= 0.10) {
+                    interpretation = 'Faible corrélation positive';
+                    color = 'var(--text-secondary)';
+                  } else if (value >= 0) {
+                    interpretation = 'Corrélation quasi nulle — excellente diversification';
                     color = 'var(--success)';
+                  }
+                  // Corrélations négatives
+                  else if (value >= -0.10) {
+                    interpretation = 'Légère corrélation négative';
+                    color = 'var(--success)';
+                  } else if (value >= -0.30) {
+                    interpretation = 'Faible corrélation négative';
+                    color = 'var(--success)';
+                  } else if (value >= -0.50) {
+                    interpretation = 'Corrélation modérée négative';
+                    color = 'rgb(34, 197, 94)';
+                  } else if (value >= -0.80) {
+                    interpretation = 'Forte corrélation négative';
+                    color = 'rgb(16, 185, 129)';
+                  } else {
+                    interpretation = 'Très forte corrélation négative';
+                    color = 'rgb(6, 182, 212)';
                   }
 
                   return (
