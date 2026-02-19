@@ -189,13 +189,13 @@ class PortfolioAnalytics:
             logger.error(f"Error calculating portfolio beta: {str(e)}")
             return 1.0
     
-    def calculate_position_beta(self, symbol: str, period: str = '1y') -> float:
-        """Calculate beta for a single position"""
+    def calculate_position_beta(self, symbol: str, period: str = '1y', market_index: str = '^GSPC') -> float:
+        """Calculate beta for a single position against the specified market index"""
         try:
-            # Get market data
-            market_data = self.yf_service.get_market_data('^GSPC', period)
+            # Get market data using the user's benchmark
+            market_data = self.yf_service.get_market_data(market_index, period)
             if market_data is None or market_data.empty:
-                logger.warning(f"No market data for beta calculation of {symbol}")
+                logger.warning(f"No market data for beta calculation of {symbol} against {market_index}")
                 return 1.0
             
             # Make timezone naive
@@ -217,7 +217,7 @@ class PortfolioAnalytics:
             position_returns = self.yf_service.calculate_returns(hist_data['Close'])
             beta = self.yf_service.calculate_beta(position_returns, market_returns)
             
-            logger.info(f"Calculated beta for {symbol}: {beta}")
+            logger.info(f"Calculated beta for {symbol} vs {market_index}: {beta}")
             return round(beta, 2)
         except Exception as e:
             logger.error(f"Error calculating position beta for {symbol}: {str(e)}")
