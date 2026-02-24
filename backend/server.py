@@ -593,12 +593,25 @@ async def get_portfolio_summary(user_id: str, portfolio_id: Optional[str] = None
     total_withdrawals = sum(c['amount'] for c in contributions if c['type'] == 'withdrawal')
     net_capital = total_deposits - total_withdrawals
     
-    # Calculate performance based on capital contributions
-    capital_gain_loss = total_value - net_capital if net_capital > 0 else 0
+    # Get cash accounts for this portfolio and add to total value
+    cash_query = {"user_id": user_id}
+    if portfolio_id:
+        cash_query["portfolio_id"] = portfolio_id
+    
+    cash_accounts = await db.cash_accounts.find(cash_query).to_list(100)
+    total_cash = sum(acc.get('balance', 0) for acc in cash_accounts)
+    
+    # Total value includes positions + cash
+    total_value_with_cash = total_value + total_cash
+    
+    # Calculate performance based on capital contributions (using total value with cash)
+    capital_gain_loss = total_value_with_cash - net_capital if net_capital > 0 else 0
     capital_performance_percent = (capital_gain_loss / net_capital * 100) if net_capital > 0 else 0
     
     return {
-        "total_value": round(total_value, 2),
+        "total_value": round(total_value_with_cash, 2),
+        "positions_value": round(total_value, 2),
+        "cash_value": round(total_cash, 2),
         "total_invested": round(total_invested, 2),
         "total_gain_loss": round(total_gain_loss, 2),
         "gain_loss_percent": round(gain_loss_percent, 2),
