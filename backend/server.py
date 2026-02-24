@@ -618,16 +618,30 @@ async def get_portfolio_summary(user_id: str, portfolio_id: Optional[str] = None
     total_withdrawals = sum(c['amount'] for c in contributions if c['type'] == 'withdrawal')
     net_capital = total_deposits - total_withdrawals
     
-    # Get cash accounts for this portfolio and add to total value
+    # Get cash accounts for this portfolio and convert all to EUR
     cash_query = {"user_id": user_id}
     if portfolio_id:
         cash_query["portfolio_id"] = portfolio_id
     
     cash_accounts = await db.cash_accounts.find(cash_query).to_list(100)
-    total_cash = sum(acc.get('balance', 0) for acc in cash_accounts)
     
-    # Total value includes positions + cash
-    total_value_with_cash = total_value + total_cash
+    # Convert all cash to EUR for accurate total
+    total_cash_eur = 0.0
+    cash_details = []
+    for acc in cash_accounts:
+        currency = acc.get('currency', 'EUR')
+        balance = acc.get('balance', 0)
+        if balance != 0:
+            balance_in_eur = yf_service.convert_to_eur(balance, currency)
+            total_cash_eur += balance_in_eur
+            cash_details.append({
+                'currency': currency,
+                'balance': balance,
+                'balance_eur': round(balance_in_eur, 2)
+            })
+    
+    # Total value includes positions + cash (all in EUR)
+    total_value_with_cash = total_value + total_cash_eur
     
     # Calculate performance based on capital contributions (using total value with cash)
     capital_gain_loss = total_value_with_cash - net_capital if net_capital > 0 else 0
