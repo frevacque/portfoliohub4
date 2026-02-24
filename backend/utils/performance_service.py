@@ -210,7 +210,13 @@ class PerformanceService:
         portfolio_performance: List[Dict],
         index_symbol: str = '^GSPC'
     ) -> Dict:
-        """Compare portfolio performance with market index"""
+        """
+        Compare portfolio performance with market index.
+        
+        IMPORTANT: This method handles the case where portfolio may have data
+        for days the index doesn't trade (e.g., crypto positions on weekends).
+        We align on index trading days for accurate comparison.
+        """
         try:
             if not portfolio_performance:
                 return {'data': []}
@@ -222,33 +228,53 @@ class PerformanceService:
             hist_data = self.yf_service.get_historical_data(index_symbol, period='2y')
             
             if hist_data is None or hist_data.empty:
+                logger.warning(f"No historical data for index {index_symbol}")
                 return {'data': []}
             
             # Filter by date range - make dates timezone naive for comparison
-            hist_data.index = hist_data.index.tz_localize(None)
+            if hist_data.index.tz is not None:
+                hist_data.index = hist_data.index.tz_localize(None)
             hist_data = hist_data[(hist_data.index >= start_date) & (hist_data.index <= end_date)]
             
-            # Normalize to percentage change
+            if hist_data.empty:
+                return {'data': []}
+            
+            # Normalize index to percentage change
             initial_price = hist_data['Close'].iloc[0]
+            if initial_price <= 0:
+                return {'data': []}
+            
+            # Create a lookup dict from portfolio performance
+            portfolio_lookup = {p['date']: p['change_percent'] for p in portfolio_performance}
             
             comparison_data = []
+            last_portfolio_percent = 0  # Track last known portfolio value for interpolation
+            
             for date, row in hist_data.iterrows():
                 date_str = date.strftime('%Y-%m-%d')
                 price = row['Close']
-                change_percent = ((price - initial_price) / initial_price * 100) if initial_price > 0 else 0
+                index_change_percent = ((price - initial_price) / initial_price * 100)
                 
-                # Find corresponding portfolio data
-                portfolio_point = next((p for p in portfolio_performance if p['date'] == date_str), None)
+                # Get portfolio performance for this date
+                # If the exact date doesn't exist (e.g., index trades but portfolio data missing),
+                # try to find the nearest previous date
+                if date_str in portfolio_lookup:
+                    portfolio_percent = portfolio_lookup[date_str]
+                    last_portfolio_percent = portfolio_percent
+                else:
+                    # Use last known portfolio percentage (forward-fill approach)
+                    portfolio_percent = last_portfolio_percent
                 
-                if portfolio_point:
-                    comparison_data.append({
-                        'date': date_str,
-                        'portfolio_percent': portfolio_point['change_percent'],
-                        'index_percent': round(change_percent, 2)
-                    })
+                comparison_data.append({
+                    'date': date_str,
+                    'portfolio_percent': round(portfolio_percent, 2),
+                    'index_percent': round(index_change_percent, 2)
+                })
             
             return {'data': comparison_data}
             
         except Exception as e:
             logger.error(f"Error comparing with index: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {'data': []}
