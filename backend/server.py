@@ -1296,6 +1296,73 @@ async def update_user_settings(settings_data: UserSettingsUpdate, user_id: str):
         "benchmark_index": settings_data.benchmark_index
     }
 
+# Capital Contributions (Versements) endpoints
+@api_router.get("/capital")
+async def get_capital_summary(user_id: str):
+    """Get total capital contributions (deposits - withdrawals)"""
+    contributions = await db.capital_contributions.find({"user_id": user_id}).sort("date", -1).to_list(1000)
+    
+    total_deposits = sum(c['amount'] for c in contributions if c['type'] == 'deposit')
+    total_withdrawals = sum(c['amount'] for c in contributions if c['type'] == 'withdrawal')
+    net_capital = total_deposits - total_withdrawals
+    
+    # Clean MongoDB _id from contributions
+    clean_contributions = [{
+        "id": c.get("id"),
+        "type": c.get("type"),
+        "amount": c.get("amount"),
+        "description": c.get("description", ""),
+        "date": c.get("date").isoformat() if hasattr(c.get("date"), 'isoformat') else c.get("date")
+    } for c in contributions]
+    
+    return {
+        "total_deposits": round(total_deposits, 2),
+        "total_withdrawals": round(total_withdrawals, 2),
+        "net_capital": round(net_capital, 2),
+        "contributions": clean_contributions
+    }
+
+@api_router.post("/capital")
+async def add_capital_contribution(user_id: str, type: str, amount: float, description: str = ""):
+    """Add a capital contribution (deposit or withdrawal)"""
+    if type not in ["deposit", "withdrawal"]:
+        raise HTTPException(status_code=400, detail="Type doit être 'deposit' ou 'withdrawal'")
+    
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Le montant doit être positif")
+    
+    contribution = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "type": type,
+        "amount": amount,
+        "description": description,
+        "date": datetime.utcnow(),
+        "created_at": datetime.utcnow()
+    }
+    
+    await db.capital_contributions.insert_one(contribution)
+    
+    # Recalculate totals
+    contributions = await db.capital_contributions.find({"user_id": user_id}).to_list(1000)
+    total_deposits = sum(c['amount'] for c in contributions if c['type'] == 'deposit')
+    total_withdrawals = sum(c['amount'] for c in contributions if c['type'] == 'withdrawal')
+    net_capital = total_deposits - total_withdrawals
+    
+    return {
+        "message": "Versement ajouté" if type == "deposit" else "Retrait ajouté",
+        "id": contribution["id"],
+        "net_capital": round(net_capital, 2)
+    }
+
+@api_router.delete("/capital/{contribution_id}")
+async def delete_capital_contribution(contribution_id: str, user_id: str):
+    """Delete a capital contribution"""
+    result = await db.capital_contributions.delete_one({"id": contribution_id, "user_id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Contribution non trouvée")
+    return {"message": "Contribution supprimée"}
+
 # Cash Management endpoints - Multi-currency accounts
 @api_router.get("/cash-accounts")
 async def get_cash_accounts(user_id: str):
