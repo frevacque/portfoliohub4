@@ -79,6 +79,19 @@ class Transaction(BaseModel):
     date: datetime = Field(default_factory=datetime.utcnow)
 
 # Portfolio Models
+class PortfolioCreate(BaseModel):
+    name: str
+    description: Optional[str] = ""
+    is_default: bool = False
+
+class Portfolio(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    name: str
+    description: Optional[str] = ""
+    is_default: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class PortfolioSummary(BaseModel):
     total_value: float
     total_invested: float
