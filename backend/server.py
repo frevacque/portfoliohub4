@@ -313,19 +313,20 @@ async def add_position(position_data: PositionCreate, user_id: str):
         new_balance = None
         cash_msg = ""
         if link_to_cash:
-            account = await db.cash_accounts.find_one({"user_id": user_id, "currency": cash_currency})
+            account = await db.cash_accounts.find_one({"user_id": user_id, "portfolio_id": portfolio_id, "currency": cash_currency})
             current_balance = account['balance'] if account else 0.0
             new_balance = current_balance - buy_total
             
             if account:
                 await db.cash_accounts.update_one(
-                    {"user_id": user_id, "currency": cash_currency},
+                    {"user_id": user_id, "portfolio_id": portfolio_id, "currency": cash_currency},
                     {"$set": {"balance": new_balance, "updated_at": datetime.utcnow()}}
                 )
             else:
                 await db.cash_accounts.insert_one({
                     "id": str(uuid.uuid4()),
                     "user_id": user_id,
+                    "portfolio_id": portfolio_id,
                     "currency": cash_currency,
                     "balance": new_balance,
                     "created_at": datetime.utcnow(),
@@ -342,6 +343,7 @@ async def add_position(position_data: PositionCreate, user_id: str):
             )
             cash_tx_dict = cash_transaction.dict()
             cash_tx_dict['currency'] = cash_currency
+            cash_tx_dict['portfolio_id'] = portfolio_id
             await db.cash_transactions.insert_one(cash_tx_dict)
             cash_msg = f" -{round(buy_total, 2)} {cash_currency} déduits du solde cash."
         
