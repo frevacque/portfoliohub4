@@ -295,8 +295,8 @@ const Dashboard = () => {
               alignItems: 'center',
               gap: '8px'
             }}>
-              {portfolio.gain_loss_percent >= 0 ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
-              {formatPercent(portfolio.gain_loss_percent)}
+              {(portfolio.net_capital > 0 ? portfolio.capital_performance_percent : portfolio.gain_loss_percent) >= 0 ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
+              {formatPercent(portfolio.net_capital > 0 ? portfolio.capital_performance_percent : portfolio.gain_loss_percent)}
             </div>
           </div>
         </div>
