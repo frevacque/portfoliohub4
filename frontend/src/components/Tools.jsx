@@ -95,7 +95,7 @@ const Tools = () => {
     <div className="container" style={{ padding: '32px 24px' }}>
       <div style={{ marginBottom: '32px' }}>
         <h1 className="display-md" style={{ marginBottom: '8px' }}>Outils</h1>
-        <p className="body-md" style={{ color: 'var(--text-muted)' }}>Export, budget, et simulations</p>
+        <p className="body-md" style={{ color: 'var(--text-muted)' }}>Export et simulations</p>
       </div>
 
       <div style={{ marginBottom: '32px' }}>
