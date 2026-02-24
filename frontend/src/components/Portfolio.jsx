@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, TrendingUp, TrendingDown, X, Trash2, Calendar, Briefcase, StickyNote, Save, Merge, Wallet, DollarSign } from 'lucide-react';
+import { Plus, Search, TrendingUp, TrendingDown, X, Trash2, Calendar, Briefcase, StickyNote, Save, Merge, Wallet, DollarSign, History } from 'lucide-react';
 import { portfolioAPI, analyticsAPI, storage, portfoliosAPI } from '../api';
 import axios from 'axios';
 
