@@ -338,6 +338,89 @@ const Portfolio = () => {
         </div>
       </div>
 
+      {/* Capital (Versements) Section */}
+      <div className="card" style={{ marginBottom: '24px', padding: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <TrendingUp size={22} color="var(--accent-primary)" />
+            <h3 className="h3">Cumul des Versements</h3>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              className="btn-primary" 
+              onClick={() => setShowCapitalModal('deposit')}
+              style={{ padding: '8px 16px', fontSize: '13px' }}
+            >
+              <Plus size={16} />
+              Ajout
+            </button>
+            <button 
+              className="btn-secondary" 
+              onClick={() => setShowCapitalModal('withdrawal')}
+              style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+            >
+              <TrendingDown size={16} />
+              Retrait
+            </button>
+          </div>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ 
+            padding: '16px 24px',
+            background: 'var(--bg-tertiary)',
+            borderRadius: '12px',
+            textAlign: 'center',
+            minWidth: '180px'
+          }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+              Capital Net Investi
+            </div>
+            <div style={{ 
+              fontSize: '28px', 
+              fontWeight: '700', 
+              color: 'var(--accent-primary)'
+            }}>
+              {formatCurrency(capitalData.net_capital)}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Base de calcul performance
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '2px' }}>Versements</div>
+              <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--success)' }}>
+                +{formatCurrency(capitalData.total_deposits)}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '2px' }}>Retraits</div>
+              <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--danger)' }}>
+                -{formatCurrency(capitalData.total_withdrawals)}
+              </div>
+            </div>
+          </div>
+          
+          {capitalData.contributions && capitalData.contributions.length > 0 && (
+            <button
+              onClick={() => setShowCapitalModal('history')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--accent-primary)',
+                cursor: 'pointer',
+                fontSize: '13px',
+                textDecoration: 'underline'
+              }}
+            >
+              Voir l'historique ({capitalData.contributions.length})
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Search Bar */}
       {positions.length > 0 && (
         <div style={{ marginBottom: '24px', position: 'relative' }}>
