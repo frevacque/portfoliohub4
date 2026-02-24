@@ -339,36 +339,6 @@ const Analytics = () => {
         </div>
       )}
 
-      {/* Dividends Tracker */}
-      {activeTab === 'dividends' && (
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <h2 className="h2">Suivi des Dividendes</h2>
-            <button className="btn-primary" style={{ padding: '12px 24px' }}>
-              <DollarSign size={18} />
-              Ajouter un dividende
-            </button>
-          </div>
-          {dividends.length > 0 ? (
-            <div>
-              <div style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                <div style={{ padding: '16px', background: 'var(--success-bg)', borderRadius: '12px', border: '1px solid var(--success)' }}>
-                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>Total Dividendes</div>
-                  <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--success)' }}>
-                    {formatCurrency(dividends.reduce((sum, d) => sum + d.amount, 0))}
-                  </div>
-                </div>
-              </div>
-              {/* Dividend list would go here */}
-            </div>
-          ) : (
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px' }}>
-              Aucun dividende enregistré. Commencez à tracker vos dividendes pour suivre vos revenus passifs.
-            </p>
-          )}
-        </div>
-      )}
-
       {/* Alerts */}
       {activeTab === 'alerts' && (
         <div className="card">
