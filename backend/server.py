@@ -1400,17 +1400,28 @@ async def delete_capital_contribution(contribution_id: str, user_id: str):
         raise HTTPException(status_code=404, detail="Contribution non trouvée")
     return {"message": "Contribution supprimée"}
 
-# Cash Management endpoints - Multi-currency accounts
+# Cash Management endpoints - Multi-currency accounts (Now portfolio-specific)
 @api_router.get("/cash-accounts")
-async def get_cash_accounts(user_id: str):
-    """Get all cash accounts with different currencies"""
-    accounts = await db.cash_accounts.find({"user_id": user_id}).to_list(100)
+async def get_cash_accounts(user_id: str, portfolio_id: Optional[str] = None):
+    """Get all cash accounts with different currencies for a specific portfolio"""
+    # Build query
+    query = {"user_id": user_id}
+    if portfolio_id:
+        query["portfolio_id"] = portfolio_id
+    else:
+        # Get default portfolio if not specified
+        default_portfolio = await db.portfolios.find_one({"user_id": user_id, "is_default": True})
+        if default_portfolio:
+            query["portfolio_id"] = default_portfolio['id']
     
-    # If no accounts, create default EUR account
-    if not accounts:
+    accounts = await db.cash_accounts.find(query).to_list(100)
+    
+    # If no accounts for this portfolio, create default EUR account
+    if not accounts and query.get("portfolio_id"):
         default_account = {
             "id": str(uuid.uuid4()),
             "user_id": user_id,
+            "portfolio_id": query["portfolio_id"],
             "currency": "EUR",
             "balance": 0.0,
             "created_at": datetime.utcnow(),
@@ -1422,40 +1433,59 @@ async def get_cash_accounts(user_id: str):
     # Clean MongoDB _id
     return [{
         "id": acc.get("id"),
+        "portfolio_id": acc.get("portfolio_id"),
         "currency": acc.get("currency"),
         "balance": acc.get("balance", 0.0),
         "updated_at": acc.get("updated_at").isoformat() if hasattr(acc.get("updated_at"), 'isoformat') else acc.get("updated_at")
     } for acc in accounts]
 
 @api_router.post("/cash-accounts")
-async def create_cash_account(user_id: str, currency: str = "EUR"):
-    """Create a new cash account for a specific currency"""
-    # Check if account already exists for this currency
-    existing = await db.cash_accounts.find_one({"user_id": user_id, "currency": currency})
+async def create_cash_account(user_id: str, currency: str = "EUR", portfolio_id: Optional[str] = None):
+    """Create a new cash account for a specific currency and portfolio"""
+    # Get portfolio_id if not provided
+    if not portfolio_id:
+        default_portfolio = await db.portfolios.find_one({"user_id": user_id, "is_default": True})
+        if default_portfolio:
+            portfolio_id = default_portfolio['id']
+        else:
+            first_portfolio = await db.portfolios.find_one({"user_id": user_id})
+            if first_portfolio:
+                portfolio_id = first_portfolio['id']
+    
+    # Check if account already exists for this currency and portfolio
+    existing = await db.cash_accounts.find_one({"user_id": user_id, "portfolio_id": portfolio_id, "currency": currency})
     if existing:
-        return {"message": "Compte déjà existant", "id": existing.get("id"), "currency": currency}
+        return {"message": "Compte déjà existant", "id": existing.get("id"), "currency": currency, "portfolio_id": portfolio_id}
     
     new_account = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
+        "portfolio_id": portfolio_id,
         "currency": currency,
         "balance": 0.0,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
     await db.cash_accounts.insert_one(new_account)
-    return {"message": "Compte créé", "id": new_account["id"], "currency": currency}
+    return {"message": "Compte créé", "id": new_account["id"], "currency": currency, "portfolio_id": portfolio_id}
 
 @api_router.put("/cash-accounts/{currency}")
-async def update_cash_account(currency: str, user_id: str, amount: float, operation: str = "set"):
+async def update_cash_account(currency: str, user_id: str, amount: float, operation: str = "set", portfolio_id: Optional[str] = None):
     """Update cash account balance. Operation: 'set', 'add', 'subtract'"""
-    account = await db.cash_accounts.find_one({"user_id": user_id, "currency": currency})
+    # Get portfolio_id if not provided
+    if not portfolio_id:
+        default_portfolio = await db.portfolios.find_one({"user_id": user_id, "is_default": True})
+        if default_portfolio:
+            portfolio_id = default_portfolio['id']
+    
+    account = await db.cash_accounts.find_one({"user_id": user_id, "portfolio_id": portfolio_id, "currency": currency})
     
     if not account:
         # Create account if doesn't exist
         account = {
             "id": str(uuid.uuid4()),
             "user_id": user_id,
+            "portfolio_id": portfolio_id,
             "currency": currency,
             "balance": 0.0,
             "created_at": datetime.utcnow(),
@@ -1475,16 +1505,22 @@ async def update_cash_account(currency: str, user_id: str, amount: float, operat
         new_balance = amount
     
     await db.cash_accounts.update_one(
-        {"user_id": user_id, "currency": currency},
+        {"user_id": user_id, "portfolio_id": portfolio_id, "currency": currency},
         {"$set": {"balance": new_balance, "updated_at": datetime.utcnow()}}
     )
     
-    return {"message": "Solde mis à jour", "currency": currency, "balance": new_balance}
+    return {"message": "Solde mis à jour", "currency": currency, "balance": new_balance, "portfolio_id": portfolio_id}
 
 @api_router.delete("/cash-accounts/{currency}")
-async def delete_cash_account(currency: str, user_id: str):
+async def delete_cash_account(currency: str, user_id: str, portfolio_id: Optional[str] = None):
     """Delete a cash account"""
-    result = await db.cash_accounts.delete_one({"user_id": user_id, "currency": currency})
+    # Get portfolio_id if not provided
+    if not portfolio_id:
+        default_portfolio = await db.portfolios.find_one({"user_id": user_id, "is_default": True})
+        if default_portfolio:
+            portfolio_id = default_portfolio['id']
+    
+    result = await db.cash_accounts.delete_one({"user_id": user_id, "portfolio_id": portfolio_id, "currency": currency})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Compte non trouvé")
     return {"message": "Compte supprimé"}
