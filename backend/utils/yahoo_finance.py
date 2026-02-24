@@ -7,8 +7,65 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Cache for exchange rates (to avoid too many API calls)
+_exchange_rate_cache = {}
+_cache_timestamp = None
+CACHE_DURATION = 300  # 5 minutes
+
 class YahooFinanceService:
     """Service for fetching data from Yahoo Finance"""
+    
+    @staticmethod
+    def get_exchange_rate(from_currency: str, to_currency: str = 'EUR') -> float:
+        """
+        Get exchange rate from one currency to another.
+        Returns the rate to multiply by to convert from_currency to to_currency.
+        Example: get_exchange_rate('USD', 'EUR') returns ~0.92 (1 USD = 0.92 EUR)
+        """
+        global _exchange_rate_cache, _cache_timestamp
+        
+        # Same currency = no conversion needed
+        if from_currency.upper() == to_currency.upper():
+            return 1.0
+        
+        cache_key = f"{from_currency.upper()}{to_currency.upper()}"
+        
+        # Check cache
+        now = datetime.now()
+        if _cache_timestamp and (now - _cache_timestamp).seconds < CACHE_DURATION:
+            if cache_key in _exchange_rate_cache:
+                return _exchange_rate_cache[cache_key]
+        
+        try:
+            # Yahoo Finance format for forex: USDEUR=X
+            symbol = f"{from_currency.upper()}{to_currency.upper()}=X"
+            ticker = yf.Ticker(symbol)
+            data = ticker.history(period='1d')
+            
+            if data.empty:
+                logger.warning(f"No exchange rate data for {symbol}, using 1.0")
+                return 1.0
+            
+            rate = float(data['Close'].iloc[-1])
+            
+            # Update cache
+            _exchange_rate_cache[cache_key] = rate
+            _cache_timestamp = now
+            
+            logger.info(f"Exchange rate {from_currency}->{to_currency}: {rate}")
+            return rate
+            
+        except Exception as e:
+            logger.error(f"Error fetching exchange rate {from_currency}->{to_currency}: {str(e)}")
+            return 1.0
+    
+    @staticmethod
+    def convert_to_eur(amount: float, from_currency: str) -> float:
+        """Convert an amount from any currency to EUR"""
+        if from_currency.upper() == 'EUR':
+            return amount
+        rate = YahooFinanceService.get_exchange_rate(from_currency, 'EUR')
+        return amount * rate
     
     @staticmethod
     def get_current_price(symbol: str) -> Optional[float]:
