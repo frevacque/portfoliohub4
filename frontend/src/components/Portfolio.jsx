@@ -71,12 +71,13 @@ const Portfolio = () => {
       }
       setActivePortfolio(currentPortfolio);
       
-      // Get positions, correlations, cash accounts and capital
+      // Get positions, correlations, cash accounts and capital for the active portfolio
+      const portfolioIdParam = currentPortfolio?.id ? `&portfolio_id=${currentPortfolio.id}` : '';
       const [positionsData, correlationsData, cashData, capitalResponse] = await Promise.all([
         portfolioAPI.getPositions(userId, currentPortfolio?.id),
         analyticsAPI.getCorrelation(userId),
-        axios.get(`${API}/cash-accounts?user_id=${userId}`),
-        axios.get(`${API}/capital?user_id=${userId}`)
+        axios.get(`${API}/cash-accounts?user_id=${userId}${portfolioIdParam}`),
+        axios.get(`${API}/capital?user_id=${userId}${portfolioIdParam}`)
       ]);
       setPositions(positionsData);
       setCorrelations(correlationsData);
