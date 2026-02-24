@@ -85,6 +85,12 @@ Application de gestion de portefeuille financier permettant de suivre et analyse
 - Chargement lent des pages (~10s) dû aux appels Yahoo Finance synchrones
   - Suggestion: Implémenter du caching ou des appels asynchrones
 
+## Test Credentials
+- **Email**: testcrypto@test.com
+- **Password**: test123
+- **User ID**: c30befea-7024-4e34-a0d5-dd8a6740917d
+- **Positions**: BTC-EUR (0.1 unités), AAPL (10 unités)
+
 ## API Endpoints Clés
 - `POST /api/positions` - Achat/Vente de positions
 - `GET /api/positions?portfolio_id=X` - Liste positions filtrées
