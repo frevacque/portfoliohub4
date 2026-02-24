@@ -156,22 +156,6 @@ const Tools = () => {
           </div>
         </div>
       )}
-              </button>
-            </div>
-
-            {budget && (
-              <div style={{ marginTop: '32px', padding: '20px', background: 'var(--success-bg)', borderRadius: '12px', border: '1px solid var(--success)' }}>
-                <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>
-                  Budget actif
-                </div>
-                <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--success)' }}>
-                  {formatCurrency(budget.monthly_amount)} / mois
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {activeTab === 'simulation' && (
         <div className="card">
