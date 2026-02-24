@@ -33,6 +33,8 @@ const Portfolio = () => {
   const [cashAccounts, setCashAccounts] = useState([]);
   const [linkToCash, setLinkToCash] = useState(false);
   const [selectedCashCurrency, setSelectedCashCurrency] = useState('EUR');
+  const [capitalData, setCapitalData] = useState({ net_capital: 0, total_deposits: 0, total_withdrawals: 0, contributions: [] });
+  const [showCapitalModal, setShowCapitalModal] = useState(false);
   const [formData, setFormData] = useState({
     symbol: '',
     type: 'stock',
@@ -69,10 +71,17 @@ const Portfolio = () => {
       }
       setActivePortfolio(currentPortfolio);
       
-      // Get positions, correlations and cash accounts
-      const [positionsData, correlationsData, cashData] = await Promise.all([
+      // Get positions, correlations, cash accounts and capital
+      const [positionsData, correlationsData, cashData, capitalResponse] = await Promise.all([
         portfolioAPI.getPositions(userId, currentPortfolio?.id),
         analyticsAPI.getCorrelation(userId),
+        axios.get(`${API}/cash-accounts?user_id=${userId}`),
+        axios.get(`${API}/capital?user_id=${userId}`)
+      ]);
+      setPositions(positionsData);
+      setCorrelations(correlationsData);
+      setCashAccounts(cashData.data || []);
+      setCapitalData(capitalResponse.data);
         axios.get(`${API}/cash-accounts?user_id=${userId}`)
       ]);
       setPositions(positionsData);
