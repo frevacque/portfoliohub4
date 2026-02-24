@@ -1124,11 +1124,13 @@ const Portfolio = () => {
 };
 
 // Cash Management Modal Component
-const CashManagementModal = ({ cashAccounts, setCashAccounts, userId, onClose }) => {
+const CashManagementModal = ({ cashAccounts, setCashAccounts, userId, portfolioId, onClose }) => {
   const [newCurrency, setNewCurrency] = useState('USD');
   const [editAmount, setEditAmount] = useState('');
   const [editCurrency, setEditCurrency] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const portfolioIdParam = portfolioId ? `&portfolio_id=${portfolioId}` : '';
 
   const handleAddAccount = async () => {
     if (cashAccounts.find(a => a.currency === newCurrency)) {
@@ -1137,8 +1139,8 @@ const CashManagementModal = ({ cashAccounts, setCashAccounts, userId, onClose })
     }
     setLoading(true);
     try {
-      await axios.post(`${API}/cash-accounts?user_id=${userId}&currency=${newCurrency}`);
-      const response = await axios.get(`${API}/cash-accounts?user_id=${userId}`);
+      await axios.post(`${API}/cash-accounts?user_id=${userId}&currency=${newCurrency}${portfolioIdParam}`);
+      const response = await axios.get(`${API}/cash-accounts?user_id=${userId}${portfolioIdParam}`);
       setCashAccounts(response.data);
     } catch (error) {
       console.error('Error adding account:', error);
@@ -1151,8 +1153,8 @@ const CashManagementModal = ({ cashAccounts, setCashAccounts, userId, onClose })
     if (!editAmount) return;
     setLoading(true);
     try {
-      await axios.put(`${API}/cash-accounts/${currency}?user_id=${userId}&amount=${parseFloat(editAmount)}&operation=set`);
-      const response = await axios.get(`${API}/cash-accounts?user_id=${userId}`);
+      await axios.put(`${API}/cash-accounts/${currency}?user_id=${userId}&amount=${parseFloat(editAmount)}&operation=set${portfolioIdParam}`);
+      const response = await axios.get(`${API}/cash-accounts?user_id=${userId}${portfolioIdParam}`);
       setCashAccounts(response.data);
       setEditCurrency(null);
       setEditAmount('');
@@ -1167,8 +1169,8 @@ const CashManagementModal = ({ cashAccounts, setCashAccounts, userId, onClose })
     if (!window.confirm(`Supprimer le compte ${currency} ?`)) return;
     setLoading(true);
     try {
-      await axios.delete(`${API}/cash-accounts/${currency}?user_id=${userId}`);
-      const response = await axios.get(`${API}/cash-accounts?user_id=${userId}`);
+      await axios.delete(`${API}/cash-accounts/${currency}?user_id=${userId}${portfolioIdParam}`);
+      const response = await axios.get(`${API}/cash-accounts?user_id=${userId}${portfolioIdParam}`);
       setCashAccounts(response.data);
     } catch (error) {
       console.error('Error deleting account:', error);
