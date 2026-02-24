@@ -1102,6 +1102,18 @@ const Portfolio = () => {
           onClose={() => setShowCashModal(false)}
         />
       )}
+
+      {/* Capital Modal */}
+      {showCapitalModal && (
+        <CapitalModal 
+          mode={showCapitalModal}
+          capitalData={capitalData}
+          setCapitalData={setCapitalData}
+          userId={userId}
+          onClose={() => setShowCapitalModal(false)}
+          fetchData={fetchData}
+        />
+      )}
     </div>
   );
 };
