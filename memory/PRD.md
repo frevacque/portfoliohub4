@@ -54,6 +54,16 @@ Application de gestion de portefeuille financier permettant de suivre et analyse
    - **Fichier modifié**: `/app/backend/utils/performance_service.py`
    - **Tests**: 24 tests passent, validation complète sur toutes les périodes (1m, 3m, 6m, 1y, ytd, all)
 
+2. ✅ **Portefeuilles Complètement Indépendants**
+   - **Demande**: Chaque portefeuille doit être totalement indépendant avec ses propres versements de capital, comptes cash et calculs de performance
+   - **Modifications**:
+     - API `/api/capital` : ajout du paramètre `portfolio_id` pour les versements
+     - API `/api/cash-accounts` : ajout du paramètre `portfolio_id` pour les comptes cash
+     - API `/api/portfolio/summary` : calcul de performance basé sur le capital du portefeuille spécifique
+   - **Frontend**: Positions.jsx passe `portfolioId` aux modals de gestion cash et capital
+   - **Nettoyage**: Suppression des anciennes données sans `portfolio_id`
+   - **Tests**: 13 tests d'isolation backend passent + validation frontend
+
 ### Session 12/02/2026
 1. ✅ **Correction Bug P0 - Incohérence des données**
    - Dashboard et page Positions utilisent maintenant le même `portfolio_id` actif
