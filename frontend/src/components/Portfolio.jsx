@@ -1383,4 +1383,202 @@ const CashManagementModal = ({ cashAccounts, setCashAccounts, userId, onClose })
   );
 };
 
+// Capital Modal Component
+const CapitalModal = ({ mode, capitalData, setCapitalData, userId, onClose, fetchData }) => {
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleAddCapital = async (type) => {
+    if (!amount || parseFloat(amount) <= 0) {
+      alert('Veuillez entrer un montant valide');
+      return;
+    }
+    setLoading(true);
+    try {
+      await axios.post(`${API}/capital?user_id=${userId}&type=${type}&amount=${parseFloat(amount)}&description=${encodeURIComponent(description)}`);
+      await fetchData();
+      setAmount('');
+      setDescription('');
+      if (mode !== 'history') onClose();
+    } catch (error) {
+      console.error('Error adding capital:', error);
+      alert('Erreur lors de l\'ajout');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteContribution = async (id) => {
+    if (!window.confirm('Supprimer cette opération ?')) return;
+    setLoading(true);
+    try {
+      await axios.delete(`${API}/capital/${id}?user_id=${userId}`);
+      await fetchData();
+    } catch (error) {
+      console.error('Error deleting contribution:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isHistory = mode === 'history';
+  const isDeposit = mode === 'deposit';
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      padding: '16px'
+    }}>
+      <div className="card" style={{ maxWidth: '500px', width: '100%', position: 'relative', padding: '24px', maxHeight: '80vh', overflow: 'auto' }}>
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--text-muted)',
+            cursor: 'pointer',
+            padding: '4px'
+          }}
+        >
+          <X size={20} />
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+          {isHistory ? (
+            <History size={24} color="var(--accent-primary)" />
+          ) : isDeposit ? (
+            <TrendingUp size={24} color="var(--success)" />
+          ) : (
+            <TrendingDown size={24} color="var(--danger)" />
+          )}
+          <h2 className="h3">
+            {isHistory ? 'Historique des Versements' : isDeposit ? 'Ajouter un Versement' : 'Enregistrer un Retrait'}
+          </h2>
+        </div>
+
+        {!isHistory && (
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)' }}>
+                Montant (€)
+              </label>
+              <input
+                type="number"
+                step="any"
+                min="0"
+                placeholder="1000.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="input-field"
+                style={{ fontSize: '18px', fontWeight: '600', textAlign: 'center' }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)' }}>
+                Description (optionnel)
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: Versement mensuel, Prime..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="input-field"
+              />
+            </div>
+
+            <button
+              onClick={() => handleAddCapital(isDeposit ? 'deposit' : 'withdrawal')}
+              disabled={loading || !amount}
+              className={isDeposit ? 'btn-primary' : 'btn-secondary'}
+              style={{ 
+                width: '100%',
+                background: isDeposit ? undefined : 'var(--danger)',
+                borderColor: isDeposit ? undefined : 'var(--danger)'
+              }}
+            >
+              {loading ? 'En cours...' : (isDeposit ? 'Ajouter le versement' : 'Enregistrer le retrait')}
+            </button>
+          </div>
+        )}
+
+        {/* History */}
+        {(isHistory || capitalData.contributions?.length > 0) && (
+          <div>
+            {!isHistory && <div style={{ borderTop: '1px solid var(--border-primary)', marginTop: '20px', paddingTop: '20px' }}></div>}
+            <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+              {isHistory ? '' : 'Dernières opérations'}
+            </h4>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: isHistory ? '400px' : '200px', overflow: 'auto' }}>
+              {capitalData.contributions?.slice(0, isHistory ? 100 : 5).map(contrib => (
+                <div 
+                  key={contrib.id}
+                  style={{ 
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px',
+                    background: 'var(--bg-tertiary)',
+                    borderRadius: '8px'
+                  }}
+                >
+                  <div>
+                    <div style={{ 
+                      fontSize: '15px', 
+                      fontWeight: '600', 
+                      color: contrib.type === 'deposit' ? 'var(--success)' : 'var(--danger)'
+                    }}>
+                      {contrib.type === 'deposit' ? '+' : '-'}{contrib.amount.toLocaleString('fr-FR')} €
+                    </div>
+                    {contrib.description && (
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{contrib.description}</div>
+                    )}
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      {new Date(contrib.date).toLocaleDateString('fr-FR')}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteContribution(contrib.id)}
+                    disabled={loading}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: '4px'
+                    }}
+                    title="Supprimer"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+              
+              {(!capitalData.contributions || capitalData.contributions.length === 0) && (
+                <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                  Aucune opération enregistrée
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default Portfolio;
