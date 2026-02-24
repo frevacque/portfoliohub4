@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, ZAxis } from 'recharts';
-import { TrendingUp, PieChart as PieIcon, Target, Bell, DollarSign, FileText, RefreshCw, LineChart } from 'lucide-react';
+import { TrendingUp, PieChart as PieIcon, Target, Bell, FileText, RefreshCw, LineChart } from 'lucide-react';
 import { portfolioAPI, storage } from '../api';
 import axios from 'axios';
 
@@ -21,10 +21,8 @@ const PRESET_BENCHMARKS = [
 const Analytics = () => {
   const [sectorData, setSectorData] = useState([]);
   const [positions, setPositions] = useState([]);
-  const [dividends, setDividends] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [goals, setGoals] = useState([]);
-  const [budget, setBudget] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('sectors');
   const [benchmarkIndex, setBenchmarkIndex] = useState('^GSPC');
@@ -37,22 +35,18 @@ const Analytics = () => {
 
   const fetchData = async () => {
     try {
-      const [positionsData, sectorDistribution, dividendsData, alertsData, goalsData, budgetData, settingsData] = await Promise.all([
+      const [positionsData, sectorDistribution, alertsData, goalsData, settingsData] = await Promise.all([
         portfolioAPI.getPositions(userId),
         axios.get(`${API}/analytics/sector-distribution?user_id=${userId}`),
-        axios.get(`${API}/dividends?user_id=${userId}`),
         axios.get(`${API}/alerts?user_id=${userId}`),
         axios.get(`${API}/goals?user_id=${userId}`),
-        axios.get(`${API}/budget?user_id=${userId}`),
         axios.get(`${API}/settings?user_id=${userId}`)
       ]);
 
       setPositions(positionsData);
       setSectorData(sectorDistribution.data);
-      setDividends(dividendsData.data);
       setAlerts(alertsData.data);
       setGoals(goalsData.data);
-      setBudget(budgetData.data);
       setBenchmarkIndex(settingsData.data.benchmark_index || '^GSPC');
     } catch (error) {
       console.error('Error fetching analytics data:', error);
