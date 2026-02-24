@@ -131,14 +131,14 @@ const Tools = () => {
 
       {activeTab === 'export' && (
         <div className="card">
-          <h2 className="h2" style={{ marginBottom: '24px' }}>Export & Import</h2>
+          <h2 className="h2" style={{ marginBottom: '24px' }}>Exporter mes données</h2>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          <div style={{ maxWidth: '400px' }}>
             <div style={{ padding: '24px', background: 'var(--bg-tertiary)', borderRadius: '12px' }}>
               <div style={{ marginBottom: '16px' }}>
                 <Download size={32} color="var(--accent-primary)" />
               </div>
-              <h3 className="h3" style={{ marginBottom: '8px' }}>Exporter mes données</h3>
+              <h3 className="h3" style={{ marginBottom: '8px' }}>Export CSV</h3>
               <p className="body-sm" style={{ marginBottom: '16px', color: 'var(--text-muted)' }}>
                 Téléchargez toutes vos positions et transactions au format CSV
               </p>
@@ -153,101 +153,9 @@ const Tools = () => {
                 {loading ? 'Export en cours...' : 'Exporter en CSV'}
               </button>
             </div>
-
-            <div style={{ padding: '24px', background: 'var(--bg-tertiary)', borderRadius: '12px' }}>
-              <div style={{ marginBottom: '16px' }}>
-                <Upload size={32} color="var(--accent-primary)" />
-              </div>
-              <h3 className="h3" style={{ marginBottom: '8px' }}>Importer des données</h3>
-              <p className="body-sm" style={{ marginBottom: '16px', color: 'var(--text-muted)' }}>
-                Importez vos positions depuis un fichier CSV
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleImportCSV}
-                style={{ display: 'none' }}
-              />
-              <button 
-                className="btn-secondary" 
-                onClick={() => fileInputRef.current?.click()}
-                disabled={loading}
-                style={{ width: '100%' }}
-                data-testid="import-csv-btn"
-              >
-                <Upload size={18} />
-                {loading ? 'Import en cours...' : 'Importer un CSV'}
-              </button>
-              
-              {importResult && (
-                <div style={{ 
-                  marginTop: '16px', 
-                  padding: '12px', 
-                  borderRadius: '8px',
-                  background: importResult.success ? 'var(--success-bg)' : 'var(--danger-bg)',
-                  border: `1px solid ${importResult.success ? 'var(--success)' : 'var(--danger)'}`
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    {importResult.success ? (
-                      <CheckCircle size={18} color="var(--success)" />
-                    ) : (
-                      <AlertCircle size={18} color="var(--danger)" />
-                    )}
-                    <span style={{ color: importResult.success ? 'var(--success)' : 'var(--danger)', fontWeight: '600' }}>
-                      {importResult.success ? 'Import réussi' : 'Erreur'}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{importResult.message}</p>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}
-
-      {activeTab === 'budget' && (
-        <div className="card">
-          <h2 className="h2" style={{ marginBottom: '24px' }}>Budget d'Investissement</h2>
-          
-          <div style={{ maxWidth: '600px' }}>
-            <p className="body-md" style={{ marginBottom: '24px', color: 'var(--text-muted)' }}>
-              Définissez votre budget mensuel pour suivre vos investissements
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>
-                  Montant mensuel (€)
-                </label>
-                <input
-                  type="number"
-                  placeholder="Ex: 500"
-                  value={newBudget.monthly_amount}
-                  onChange={(e) => setNewBudget({ ...newBudget, monthly_amount: e.target.value })}
-                  className="input-field"
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>
-                  Date de début
-                </label>
-                <input
-                  type="date"
-                  value={newBudget.start_date}
-                  onChange={(e) => setNewBudget({ ...newBudget, start_date: e.target.value })}
-                  className="input-field"
-                />
-              </div>
-
-              <button 
-                className="btn-primary" 
-                onClick={handleSaveBudget}
-                disabled={loading || !newBudget.monthly_amount}
-              >
-                <DollarSign size={18} />
-                Enregistrer le budget
               </button>
             </div>
 
