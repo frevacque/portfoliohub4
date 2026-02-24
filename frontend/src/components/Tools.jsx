@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Download, Upload, DollarSign, Target, AlertCircle, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, Target } from 'lucide-react';
 import { portfolioAPI, storage } from '../api';
 import axios from 'axios';
 
@@ -8,12 +8,8 @@ const API = `${BACKEND_URL}/api`;
 
 const Tools = () => {
   const [activeTab, setActiveTab] = useState('export');
-  const [budget, setBudget] = useState(null);
-  const [newBudget, setNewBudget] = useState({ monthly_amount: '', start_date: new Date().toISOString().split('T')[0] });
   const [simulation, setSimulation] = useState({ symbol: '', amount: '', result: null });
   const [loading, setLoading] = useState(false);
-  const [importResult, setImportResult] = useState(null);
-  const fileInputRef = useRef(null);
 
   const userId = storage.getUserId();
 
@@ -46,26 +42,6 @@ const Tools = () => {
     } catch (error) {
       console.error('Error exporting CSV:', error);
       alert('Erreur lors de l\'export');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSaveBudget = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.post(
-        `${API}/budget?user_id=${userId}`,
-        {
-          monthly_amount: parseFloat(newBudget.monthly_amount),
-          start_date: new Date(newBudget.start_date).toISOString()
-        }
-      );
-      setBudget(response.data);
-      alert('Budget enregistré!');
-    } catch (error) {
-      console.error('Error saving budget:', error);
-      alert('Erreur lors de l\'enregistrement');
     } finally {
       setLoading(false);
     }
