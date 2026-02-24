@@ -82,11 +82,6 @@ const Portfolio = () => {
       setCorrelations(correlationsData);
       setCashAccounts(cashData.data || []);
       setCapitalData(capitalResponse.data);
-        axios.get(`${API}/cash-accounts?user_id=${userId}`)
-      ]);
-      setPositions(positionsData);
-      setCorrelations(correlationsData);
-      setCashAccounts(cashData.data || []);
     } catch (error) {
       console.error('Error fetching portfolio data:', error);
     } finally {
